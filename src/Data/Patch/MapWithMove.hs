@@ -13,7 +13,7 @@ module Data.Patch.MapWithMove where
 import Data.Patch.Class
 
 import Control.Arrow
-import Control.Monad.State
+import Control.Monad.Trans.State
 import Data.Foldable
 import Data.Function
 import Data.List

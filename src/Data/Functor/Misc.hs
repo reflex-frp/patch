@@ -38,10 +38,10 @@ module Data.Functor.Misc
   ) where
 
 import Control.Applicative ((<$>))
-import Control.Monad.Identity
 import Data.Dependent.Map (DMap)
 import qualified Data.Dependent.Map as DMap
 import Data.Dependent.Sum
+import Data.Functor.Identity
 import Data.GADT.Compare
 import Data.GADT.Show
 import Data.IntMap (IntMap)

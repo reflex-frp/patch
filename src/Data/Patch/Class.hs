@@ -2,7 +2,7 @@
 -- | The interface for types which represent changes made to other types
 module Data.Patch.Class where
 
-import Control.Monad.Identity
+import Data.Functor.Identity
 import Data.Maybe
 import Data.Semigroup (Semigroup(..))
 
