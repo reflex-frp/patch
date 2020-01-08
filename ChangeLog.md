@@ -1,5 +1,9 @@
 # Revision history for patch
 
+## Unreleased
+
+* Improve asympotics of merging
+
 ## 0.0.0.1
 
 * Remove unneeded dependencies
