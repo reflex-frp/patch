@@ -1,6 +1,6 @@
 Name: patch
 Version: 0.0.0.1
-Synopsis: Infrastructure for writing patches which act on other types.
+Description: Infrastructure for writing patches which act on other types.
 License: BSD3
 License-file: LICENSE
 Author: Ryan Trinkle
