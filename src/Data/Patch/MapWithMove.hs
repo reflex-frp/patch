@@ -8,12 +8,12 @@
 {-# LANGUAGE TypeFamilies #-}
 -- | 'Patch'es on 'Map' that can insert, delete, and move values from one key to
 -- another
-module Reflex.Patch.MapWithMove where
+module Data.Patch.MapWithMove where
 
-import Reflex.Patch.Class
+import Data.Patch.Class
 
 import Control.Arrow
-import Control.Monad.State
+import Control.Monad.Trans.State
 import Data.Foldable
 import Data.Function
 import Data.List

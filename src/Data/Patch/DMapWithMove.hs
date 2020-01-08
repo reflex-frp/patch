@@ -13,11 +13,11 @@
 
 -- |Module containing @'PatchDMapWithMove' k v@ and associated functions, which represents a 'Patch' to a @'DMap' k v@ which can insert, update, delete, and
 -- move values between keys.
-module Reflex.Patch.DMapWithMove where
+module Data.Patch.DMapWithMove where
 
-import Reflex.Patch.Class
-import Reflex.Patch.MapWithMove (PatchMapWithMove (..))
-import qualified Reflex.Patch.MapWithMove as MapWithMove
+import Data.Patch.Class
+import Data.Patch.MapWithMove (PatchMapWithMove (..))
+import qualified Data.Patch.MapWithMove as MapWithMove
 
 import Data.Constraint.Extras
 import Data.Dependent.Map (DMap, DSum (..), GCompare (..))
