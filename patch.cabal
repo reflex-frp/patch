@@ -1,6 +1,10 @@
 Name: patch
-Version: 0.0.0.0
+Version: 0.0.0.1
 Synopsis: Infrastructure for writing patches which act on other types.
+Description:
+  In this library, a patch is something which can be applied, analogous to a
+  function, and which distinguishes returning the argument it was provided from
+  returning something else.
 License: BSD3
 License-file: LICENSE
 Author: Ryan Trinkle
