@@ -15,8 +15,8 @@ Before opening an issue, please check whether your issue has already been report
 
 * Describe the issue you're encountering or the suggestion you're making
 * Include any relevant steps to reproduce or code samples you can. It's always easier for us to debug if we have something that demonstrates the error.
-* Let us know what version of reflex you were using. If you're using a github checkout, provide the git hash.
-* Describe how you're building reflex (i.e., via reflex-platform, cabal install, stack, obelisk, etc.). If you're using reflex-platform or obelisk, provide the git hash of your checkout.
+* Let us know what version of patch you were using. If you're using a github checkout, provide the git hash.
+* Describe how you're building patch (i.e., via patch-platform, cabal install, stack, obelisk, etc.). If you're using patch-platform or obelisk, provide the git hash of your checkout.
 
 ## Submitting Changes
 
@@ -47,7 +47,7 @@ Make sure the project builds and that the tests pass! This will generally also b
 
 #### Dependencies
 
-Include version bounds whenever adding a dependency to the library stanza of the cabal file. Note that libraries added to reflex.cabal also need to be added to default.nix.
+Include version bounds whenever adding a dependency to the library stanza of the cabal file. Note that libraries added to patch.cabal also need to be added to default.nix.
 
 ### Documentation
 
