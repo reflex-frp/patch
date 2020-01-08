@@ -17,22 +17,22 @@ let
     ] ++ lib.optionals (reflex-platform.iosSupport) [
       "ghcIosAarch64"
     ];
-    hsPkgs = lib.genAttrs compilers (ghc: let
-      ghc' = reflex-platform.${ghc}.override {
-        overrides = self: super: {
-          reflex-dontUseTemplateHaskell = self.callPackage ./. { useTemplateHaskell = false; };
-          reflex = self.callPackage ./. { useTemplateHaskell = true; };
-        };
-      };
-    in {
-      inherit (ghc') reflex reflex-dontUseTemplateHaskell;
-    });
-  in hsPkgs // {
-    cache = reflex-platform.pinBuildInputs "reflex-${system}"
-      (lib.concatLists (map builtins.attrValues (builtins.attrValues hsPkgs)));
+    compilerPkgs = lib.genAttrs compilers (ghc: let
+      src = builtins.filterSource (path: type: !(builtins.elem (baseNameOf path) [
+        "release.nix"
+        ".git"
+        "dist"
+        "cabal.haskell-ci"
+        "cabal.project"
+        ".travis.yml"
+      ])) ./.;
+    in reflex-platform.${ghc}.callCabal2nix "patch" src {});
+  in compilerPkgs // {
+    cache = reflex-platform.pinBuildInputs "patch-${system}"
+      (builtins.attrValues compilerPkgs);
   });
 
-  metaCache = native-reflex-platform.pinBuildInputs "reflex-everywhere"
+  metaCache = native-reflex-platform.pinBuildInputs "patch-everywhere"
     (map (a: a.cache) (builtins.attrValues perPlatform));
 
 in perPlatform // { inherit metaCache; }

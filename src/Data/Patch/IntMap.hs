@@ -5,15 +5,15 @@
 {-# LANGUAGE TypeFamilies #-}
 -- | Module containing 'PatchIntMap', a 'Patch' for 'IntMap' which allows for
 -- insert/update or delete of associations.
-module Reflex.Patch.IntMap where
+module Data.Patch.IntMap where
 
+import Control.Applicative
 import Data.IntMap.Lazy (IntMap)
 import qualified Data.IntMap.Lazy as IntMap
-import Data.Maybe
-import Data.Semigroup
-import Reflex.Patch.Class
 import Data.IntMap.Merge.Lazy
-import Control.Applicative
+import Data.Maybe
+import Data.Patch.Class
+import Data.Semigroup
 
 -- | 'Patch' for 'IntMap' which represents insertion or deletion of keys in the mapping.
 -- Internally represented by 'IntMap (Maybe a)', where @Just@ means insert/update

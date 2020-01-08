@@ -3,9 +3,9 @@
 {-# LANGUAGE DeriveTraversable #-}
 -- | 'Patch'es on 'Map' that consist only of insertions (including overwrites)
 -- and deletions
-module Reflex.Patch.Map where
+module Data.Patch.Map where
 
-import Reflex.Patch.Class
+import Data.Patch.Class
 
 import Data.Map (Map)
 import qualified Data.Map as Map

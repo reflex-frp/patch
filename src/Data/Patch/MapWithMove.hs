@@ -8,12 +8,12 @@
 {-# LANGUAGE TypeFamilies #-}
 -- | 'Patch'es on 'Map' that can insert, delete, and move values from one key to
 -- another
-module Reflex.Patch.MapWithMove where
+module Data.Patch.MapWithMove where
 
-import Reflex.Patch.Class
+import Data.Patch.Class
 
 import Control.Arrow
-import Control.Monad.State
+import Control.Monad.Trans.State
 import Data.Foldable
 import Data.Function
 import Data.List
@@ -155,7 +155,7 @@ patchThatSortsMapWith cmp m = PatchMapWithMove $ Map.fromList $ catMaybes $ zipW
           Just (from, to)
         reverseMapping = Map.fromList $ catMaybes $ zipWith f unsorted sorted
         g (to, _) (from, _) = if to == from then Nothing else
-          let Just movingTo = Map.lookup from reverseMapping
+          let Just movingTo = Map.lookup to reverseMapping
           in Just (to, NodeInfo (From_Move from) $ Just movingTo)
 
 -- | Create a 'PatchMapWithMove' that, if applied to the first 'Map' provided,
