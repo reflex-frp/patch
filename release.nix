@@ -22,6 +22,7 @@ let
         "release.nix"
         ".git"
         "dist"
+        "dist-newstyle"
         "cabal.haskell-ci"
         "cabal.project"
         ".travis.yml"
