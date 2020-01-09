@@ -4,24 +4,23 @@
 {-# LANGUAGE TypeOperators #-}
 -- |
 -- Module:
---   Reflex.Patch
+--   Data.Patch
 -- Description:
---   This module defines the 'Patch' class, which is used by Reflex to manage
---   changes to 'Reflex.Class.Incremental' values.
-module Reflex.Patch
-  ( module Reflex.Patch
+--   This module defines the 'Patch' class.
+module Data.Patch
+  ( module Data.Patch
   , module X
   ) where
 
-import Reflex.Patch.Class as X
-import Reflex.Patch.DMap as X hiding (getDeletions)
-import Reflex.Patch.DMapWithMove as X (PatchDMapWithMove, const2PatchDMapWithMoveWith, mapPatchDMapWithMove,
+import Data.Patch.Class as X
+import Data.Patch.DMap as X hiding (getDeletions)
+import Data.Patch.DMapWithMove as X (PatchDMapWithMove, const2PatchDMapWithMoveWith, mapPatchDMapWithMove,
                                        patchDMapWithMoveToPatchMapWithMoveWith,
                                        traversePatchDMapWithMoveWithKey, unPatchDMapWithMove,
                                        unsafePatchDMapWithMove, weakenPatchDMapWithMoveWith)
-import Reflex.Patch.IntMap as X hiding (getDeletions)
-import Reflex.Patch.Map as X
-import Reflex.Patch.MapWithMove as X (PatchMapWithMove, patchMapWithMoveNewElements,
+import Data.Patch.IntMap as X hiding (getDeletions)
+import Data.Patch.Map as X
+import Data.Patch.MapWithMove as X (PatchMapWithMove, patchMapWithMoveNewElements,
                                       patchMapWithMoveNewElementsMap, unPatchMapWithMove,
                                       unsafePatchMapWithMove)
 import Data.Map.Monoidal (MonoidalMap)

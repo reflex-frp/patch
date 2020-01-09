@@ -6,11 +6,11 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
 -- | 'Patch'es on 'DMap' that consist only of insertions (or overwrites) and deletions.
-module Reflex.Patch.DMap where
+module Data.Patch.DMap where
 
-import Reflex.Patch.Class
-import Reflex.Patch.IntMap
-import Reflex.Patch.Map
+import Data.Patch.Class
+import Data.Patch.IntMap
+import Data.Patch.Map
 
 import Data.Dependent.Map (DMap, DSum (..), GCompare (..))
 import qualified Data.Dependent.Map as DMap

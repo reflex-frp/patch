@@ -11,9 +11,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
-#ifdef USE_REFLEX_OPTIMIZER
-{-# OPTIONS_GHC -fplugin=Reflex.Optimizer #-}
-#endif
 -- | This module provides types and functions with no particular theme, but
 -- which are relevant to the use of 'Functor'-based datastructures like
 -- 'Data.Dependent.Map.DMap'.
@@ -41,10 +38,10 @@ module Data.Functor.Misc
   ) where
 
 import Control.Applicative ((<$>))
-import Control.Monad.Identity
 import Data.Dependent.Map (DMap)
 import qualified Data.Dependent.Map as DMap
 import Data.Dependent.Sum
+import Data.Functor.Identity
 import Data.GADT.Compare
 import Data.GADT.Show
 import Data.IntMap (IntMap)
