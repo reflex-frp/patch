@@ -1,4 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DeriveTraversable #-}
 -- | 'Patch'es on 'Map' that consist only of insertions (including overwrites)
