@@ -1,5 +1,5 @@
 Name: patch
-Version: 0.0.0.1
+Version: 0.0.1.0
 Synopsis: Infrastructure for writing patches which act on other types.
 Description:
   In this library, a patch is something which can be applied, analogous to a

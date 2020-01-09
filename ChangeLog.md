@@ -1,6 +1,6 @@
 # Revision history for patch
 
-## Unreleased
+## 0.0.1.0
 
 * Support older GHCs with `split-these` flag.
 
