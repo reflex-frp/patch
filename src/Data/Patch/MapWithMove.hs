@@ -25,7 +25,7 @@ import qualified Data.Set as Set
 import Data.These (These(..))
 import Data.Tuple
 
--- | Patch a DMap with additions, deletions, and moves.  Invariant: If key @k1@
+-- | Patch a Map with additions, deletions, and moves.  Invariant: If key @k1@
 -- is coming from @From_Move k2@, then key @k2@ should be going to @Just k1@,
 -- and vice versa.  There should never be any unpaired From/To keys.
 newtype PatchMapWithMove k v = PatchMapWithMove (Map k (NodeInfo k v)) deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
