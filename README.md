@@ -23,7 +23,7 @@ newtype PatchMap k v = PatchMap { unPatchMap :: Map k (Maybe v) }
 
 The `Maybe` around the value is used to represent insertion/updates or deletion of the element at a given key.
 
-It's `Patch` instance begins with:
+Its `Patch` instance begins with:
 
 ```haskell
 instance Ord k => Patch (PatchMap k v) where
