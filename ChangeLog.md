@@ -4,6 +4,10 @@
 
 * `PatchMapWithMove` supports moves with a patch.
 
+* Add `PatchDMapWithReset`
+
+* Add `Patchable`
+
 ## 0.0.1.0
 
 * Support older GHCs with `split-these` flag.

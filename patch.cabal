@@ -44,9 +44,11 @@ library
                  , Data.Patch.Class
                  , Data.Patch.DMap
                  , Data.Patch.DMapWithMove
+                 , Data.Patch.DMapWithReset
                  , Data.Patch.IntMap
                  , Data.Patch.Map
                  , Data.Patch.MapWithMove
+                 , Data.Patch.Patchable
 
   ghc-options: -Wall -fwarn-redundant-constraints -fwarn-tabs
 
