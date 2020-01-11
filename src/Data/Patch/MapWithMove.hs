@@ -258,7 +258,6 @@ data Fixup k v
 
 -- |Compose patches having the same effect as applying the patches in turn: @'applyAlways' (p <> q) == 'applyAlways' p . 'applyAlways' q@
 instance ( Ord k
-         , Monoid p
          , DecidablyEmpty p
          , Patch p
          ) => Semigroup (PatchMapWithMove k p) where
