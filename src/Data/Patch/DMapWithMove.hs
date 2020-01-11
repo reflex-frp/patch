@@ -31,6 +31,7 @@ import qualified Data.Map as Map
 import Data.Maybe
 import Data.Semigroup (Semigroup (..), (<>))
 import Data.Some (Some(Some))
+import Data.Proxy
 import Data.These
 
 -- | Like 'PatchMapWithMove', but for 'DMap'. Each key carries a 'NodeInfo' which describes how it will be changed by the patch and connects move sources and
@@ -303,41 +304,41 @@ nodeInfoMapFromM f ni = fmap (\result -> ni { _nodeInfo_from = result }) $ f $ _
 
 -- |Weaken a 'PatchDMapWithMove' to a 'PatchMapWithMove' by weakening the keys from @k a@ to @'Some' k@ and applying a given weakening function @v a -> v'@ to
 -- values.
-weakenPatchDMapWithMoveWith :: forall k v v'. (forall a. v a -> v') -> PatchDMapWithMove k v -> PatchMapWithMove (Some k) v'
+weakenPatchDMapWithMoveWith :: forall k v v'. (forall a. v a -> v') -> PatchDMapWithMove k v -> PatchMapWithMove (Some k) (Proxy v')
 weakenPatchDMapWithMoveWith f (PatchDMapWithMove p) = PatchMapWithMove $ weakenDMapWith g p
-  where g :: forall a. NodeInfo k v a -> MapWithMove.NodeInfo (Some k) v'
+  where g :: forall a. NodeInfo k v a -> MapWithMove.NodeInfo (Some k) (Proxy v')
         g ni = MapWithMove.NodeInfo
           { MapWithMove._nodeInfo_from = case _nodeInfo_from ni of
               From_Insert v -> MapWithMove.From_Insert $ f v
               From_Delete -> MapWithMove.From_Delete
-              From_Move k -> MapWithMove.From_Move $ Some k
+              From_Move k -> MapWithMove.From_Move (Some k) Proxy
           , MapWithMove._nodeInfo_to = Some <$> getComposeMaybe (_nodeInfo_to ni)
           }
 
 -- |"Weaken" a @'PatchDMapWithMove' (Const2 k a) v@ to a @'PatchMapWithMove' k v'@. Weaken is in scare quotes because the 'Const2' has already disabled any
 -- dependency in the typing and all points are already @a@, hence the function to map each value to @v'@ is not higher rank.
-patchDMapWithMoveToPatchMapWithMoveWith :: forall k v v' a. (v a -> v') -> PatchDMapWithMove (Const2 k a) v -> PatchMapWithMove k v'
+patchDMapWithMoveToPatchMapWithMoveWith :: forall k v v' a. (v a -> v') -> PatchDMapWithMove (Const2 k a) v -> PatchMapWithMove k (Proxy v')
 patchDMapWithMoveToPatchMapWithMoveWith f (PatchDMapWithMove p) = PatchMapWithMove $ dmapToMapWith g p
-  where g :: NodeInfo (Const2 k a) v a -> MapWithMove.NodeInfo k v'
+  where g :: NodeInfo (Const2 k a) v a -> MapWithMove.NodeInfo k (Proxy v')
         g ni = MapWithMove.NodeInfo
           { MapWithMove._nodeInfo_from = case _nodeInfo_from ni of
               From_Insert v -> MapWithMove.From_Insert $ f v
               From_Delete -> MapWithMove.From_Delete
-              From_Move (Const2 k) -> MapWithMove.From_Move k
+              From_Move (Const2 k) -> MapWithMove.From_Move k Proxy
           , MapWithMove._nodeInfo_to = unConst2 <$> getComposeMaybe (_nodeInfo_to ni)
           }
 
 -- |"Strengthen" a @'PatchMapWithMove' k v@ into a @'PatchDMapWithMove ('Const2' k a)@; that is, turn a non-dependently-typed patch into a dependently typed
 -- one but which always has a constant key type represented by 'Const2'. Apply the given function to each @v@ to produce a @v' a@.
 -- Completemented by 'patchDMapWithMoveToPatchMapWithMoveWith'
-const2PatchDMapWithMoveWith :: forall k v v' a. (v -> v' a) -> PatchMapWithMove k v -> PatchDMapWithMove (Const2 k a) v'
+const2PatchDMapWithMoveWith :: forall k v v' a. (v -> v' a) -> PatchMapWithMove k (Proxy v) -> PatchDMapWithMove (Const2 k a) v'
 const2PatchDMapWithMoveWith f (PatchMapWithMove p) = PatchDMapWithMove $ DMap.fromDistinctAscList $ g <$> Map.toAscList p
-  where g :: (k, MapWithMove.NodeInfo k v) -> DSum (Const2 k a) (NodeInfo (Const2 k a) v')
+  where g :: (k, MapWithMove.NodeInfo k (Proxy v)) -> DSum (Const2 k a) (NodeInfo (Const2 k a) v')
         g (k, ni) = Const2 k :=> NodeInfo
           { _nodeInfo_from = case MapWithMove._nodeInfo_from ni of
               MapWithMove.From_Insert v -> From_Insert $ f v
               MapWithMove.From_Delete -> From_Delete
-              MapWithMove.From_Move fromKey -> From_Move $ Const2 fromKey
+              MapWithMove.From_Move fromKey Proxy -> From_Move $ Const2 fromKey
           , _nodeInfo_to = ComposeMaybe $ Const2 <$> MapWithMove._nodeInfo_to ni
           }
 

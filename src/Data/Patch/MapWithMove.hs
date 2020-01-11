@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PatternGuards #-}
@@ -7,25 +8,27 @@
 {-# LANGUAGE UndecidableInstances #-}
 -- | 'Patch'es on 'Map' that can insert, delete, and move values from one key to
 -- another
-module Reflex.Patch.MapWithMove where
+module Data.Patch.MapWithMove where
 
-import Reflex.Patch.Class
+import Data.Patch.Class
 
 import Control.Arrow
-import Control.Monad.State
+import Control.Monad.Trans.State
 import Data.Foldable
 import Data.Function
 import Data.List
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
+#if !MIN_VERSION_base(4,9,0)
 import Data.Semigroup
+#endif
 import qualified Data.Set as Set
 import Data.These
 import Data.Tuple
 
--- | Patch a DMap with additions, deletions, and moves.  Invariant: If key @k1@
--- is coming from @From_Move k@, then key @k2@ should be going to @Just k1@,
+-- | Patch a Map with additions, deletions, and moves.  Invariant: If key @k1@
+-- is coming from @From_Move k2@, then key @k2@ should be going to @Just k1@,
 -- and vice versa.  There should never be any unpaired From/To keys.
 newtype PatchMapWithMove k p = PatchMapWithMove (Map k (NodeInfo k p))
 deriving instance (Show k, Show p, Show (PatchTarget p)) => Show (PatchMapWithMove k p)

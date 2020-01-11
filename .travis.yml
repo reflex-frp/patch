@@ -139,12 +139,12 @@ script:
   - cd ${DISTDIR} || false
   - find . -maxdepth 1 -type f -name '*.tar.gz' -exec tar -xvf '{}' \;
   - find . -maxdepth 1 -type f -name '*.tar.gz' -exec rm       '{}' \;
-  - PKGDIR_reflex="$(find . -maxdepth 1 -type d -regex '.*/reflex-[0-9.]*')"
+  - PKGDIR_patch="$(find . -maxdepth 1 -type d -regex '.*/patch-[0-9.]*')"
   # Generate cabal.project
   - rm -rf cabal.project cabal.project.local cabal.project.freeze
   - touch cabal.project
   - |
-    echo "packages: ${PKGDIR_reflex}" >> cabal.project
+    echo "packages: ${PKGDIR_patch}" >> cabal.project
   - |
   - cat cabal.project || true
   - cat cabal.project.local || true
@@ -157,13 +157,11 @@ script:
   # Testing...
   - if ! $GHCJS ; then ${CABAL} v2-test $WITHCOMPILER ${TEST} ${BENCH} all | color_cabal_output ; fi
   # cabal check...
-  - (cd ${PKGDIR_reflex} && ${CABAL} -vnormal check)
+  - (cd ${PKGDIR_patch} && ${CABAL} -vnormal check)
   # haddock...
   - if ! $GHCJS ; then ${CABAL} v2-haddock $WITHCOMPILER ${TEST} ${BENCH} all | color_cabal_output ; fi
   # Constraint sets
   - rm -rf cabal.project.local
-  # Constraint set no-th
-  - ${CABAL} v2-build $WITHCOMPILER --disable-tests --disable-benchmarks --constraint='reflex -use-template-haskell' all | color_cabal_output
   # Constraint set old-these
   - if $GHCJS || ! $GHCJS && [ $HCNUMVER -lt 80800 ] ; then ${CABAL} v2-build $WITHCOMPILER --disable-tests --disable-benchmarks --constraint='these <1' all | color_cabal_output ; fi
   # Constraint set old-witherable

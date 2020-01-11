@@ -1,5 +1,5 @@
 Name: patch
-Version: 0.0.0.1
+Version: 0.0.1.0
 Synopsis: Infrastructure for writing patches which act on other types.
 Description:
   In this library, a patch is something which can be applied, analogous to a
@@ -23,6 +23,11 @@ tested-with:
   GHC  ==8.0.2 || ==8.2.2 || ==8.4.4 || ==8.6.5 || ==8.8.1
   GHCJS ==8.4
 
+flag split-these
+  description: Use split these/semialign packages
+  manual:      False
+  default:     True
+
 library
   hs-source-dirs: src
   build-depends: base >= 4.9 && < 4.14
@@ -30,10 +35,7 @@ library
                , containers >= 0.6 && < 0.7
                , dependent-map >= 0.3 && < 0.4
                , dependent-sum >= 0.6 && < 0.7
-               , monoidal-containers >= 0.6 && < 0.7
-               , semialign >=1 && <1.2
                , semigroupoids >= 4.0 && < 6
-               , these >= 1 && <1.1
                , transformers >= 0.5.6.0 && < 0.6
                , witherable >= 0.3 && < 0.3.2
 
@@ -47,6 +49,14 @@ library
                  , Data.Patch.MapWithMove
 
   ghc-options: -Wall -fwarn-redundant-constraints -fwarn-tabs
+
+  if flag(split-these)
+    build-depends: these >= 1 && <1.1
+                 , semialign >=1 && <1.2
+                 , monoidal-containers >= 0.6 && < 0.7
+  else
+    build-depends: these >= 0.4 && <0.9
+                 , monoidal-containers == 0.4.0.0
 
 test-suite hlint
   type: exitcode-stdio-1.0

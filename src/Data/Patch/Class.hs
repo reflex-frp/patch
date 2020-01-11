@@ -5,6 +5,7 @@ module Data.Patch.Class where
 import Data.Functor.Identity
 import Data.Maybe
 import Data.Semigroup (Semigroup(..))
+import Data.Proxy
 
 -- | A 'Patch' type represents a kind of change made to a datastructure.
 --
@@ -24,6 +25,11 @@ applyAlways p t = fromMaybe t $ apply p t
 instance Patch (Identity a) where
   type PatchTarget (Identity a) = a
   apply (Identity a) _ = Just a
+
+-- | 'Identity' can be used as a 'Patch' that always fully replaces the value
+instance Patch (Proxy a) where
+  type PatchTarget (Proxy a) = a
+  apply ~Proxy _ = Nothing
 
 -- | Like '(.)', but composes functions that return patches rather than
 -- functions that return new values.  The Semigroup instance for patches must
