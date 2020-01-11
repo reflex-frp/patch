@@ -84,7 +84,7 @@ deriving instance ( GCompare k
 data NodeInfo k p a = NodeInfo
   { _nodeInfo_from :: !(From k p a)
   -- ^Change applying to the current key, be it an insert, move, or delete.
-  , _nodeInfo_to :: !(To k a)
+  , _nodeInfo_to :: !(Some (To k))
   -- ^Where this key is moving to, if involved in a move. Should only be @ComposeMaybe (Just k)@ when there is a corresponding 'From_Move'.
   }
 
@@ -170,20 +170,20 @@ validationErrorsForPatchDMapWithMove m =
     noSelfMoves = mapMaybe selfMove . DMap.toAscList $ m
     selfMove (dst :=> NodeInfo (From_Move src _) _)
       | Just _ <- dst `geq` src = Just $ "self move of key " <> gshow src <> " at destination side"
-    selfMove (src :=> NodeInfo _ (ComposeMaybe (Just dst)))
+    selfMove (src :=> NodeInfo _ (Some (ComposeMaybe (Just dst))))
       | Just _ <- src `geq` dst = Just $ "self move of key " <> gshow dst <> " at source side"
     selfMove _ = Nothing
     movesBalanced = mapMaybe unbalancedMove . DMap.toAscList $ m
     unbalancedMove (dst :=> NodeInfo (From_Move src _) _) =
       case DMap.lookup src m of
         Nothing -> Just $ "unbalanced move at destination key " <> gshow dst <> " supposedly from " <> gshow src <> " but source key is not in the patch"
-        Just (NodeInfo _ (ComposeMaybe (Just dst'))) ->
+        Just (NodeInfo _ (Some (ComposeMaybe (Just dst')))) ->
           if isNothing (dst' `geq` dst)
             then Just $ "unbalanced move at destination key " <> gshow dst <> " from " <> gshow src <> " is going to " <> gshow dst' <> " instead"
             else Nothing
         _ ->
           Just $ "unbalanced move at destination key " <> gshow dst <> " supposedly from " <> gshow src <> " but source key has no move to key"
-    unbalancedMove (src :=> NodeInfo _ (ComposeMaybe (Just dst))) =
+    unbalancedMove (src :=> NodeInfo _ (Some (ComposeMaybe (Just dst)))) =
       case DMap.lookup dst m of
         Nothing -> Just $ " unbalanced move at source key " <> gshow src <> " supposedly going to " <> gshow dst <> " but destination key is not in the patch"
         Just (NodeInfo (From_Move src' _) _) ->
@@ -198,6 +198,8 @@ validationErrorsForPatchDMapWithMove m =
 -- |Higher kinded 2-tuple, identical to @Data.Functor.Product@ from base ≥ 4.9
 data Pair1 f g a = Pair1 (f a) (g a)
 
+data PairHalf a f b = PairHalf a (f b)
+
 -- |Helper data structure used for composing patches using the monoid instance.
 data Fixup k v a
    = Fixup_Delete
@@ -210,9 +212,12 @@ instance ( GCompare k
          ) => Semigroup (PatchDMapWithMove k p) where
   PatchDMapWithMove ma <> PatchDMapWithMove mb = PatchDMapWithMove m
     where
-      connections = DMap.toList $ DMap.intersectionWithKey (\_ a b -> Pair1 (_nodeInfo_to a) (_nodeInfo_from b)) ma mb
-      h :: DSum k (Pair1 (ComposeMaybe k) (From k v)) -> [DSum k (Fixup k v)]
-      h (_ :=> Pair1 (ComposeMaybe mToAfter) editBefore) = case (mToAfter, editBefore) of
+      connections = DMap.toList $ DMap.intersectionWithKey
+        (\_ a b -> PairHalf (_nodeInfo_to a) (_nodeInfo_from b))
+        ma
+        mb
+      h :: DSum k (PairHalf (Some (ComposeMaybe k)) (From k v)) -> [DSum k (Fixup k v)]
+      h (between :=> PairHalf (Some (ComposeMaybe mToAfter)) editBefore) = case (mToAfter, editBefore) of
         (Just toAfter, From_Move fromBefore p)
           | case fromBefore `geq` toAfter of
               Nothing -> False
