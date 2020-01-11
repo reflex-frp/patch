@@ -54,6 +54,7 @@ library
 
   if flag(split-these)
     build-depends: these >= 1 && <1.1
+                 , these-lens >= 1 && <1.1
                  , semialign >=1 && <1.2
                  , monoidal-containers >= 0.6 && < 0.7
   else

@@ -1,8 +1,8 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 -- | The interface for types which represent changes made to other types
@@ -79,19 +79,69 @@ composePatchFunctions g f a =
   let fp = f a
   in g (applyAlways fp a) <> fp
 
-class (forall x y
-       . ( PatchHet (p x y)
-         , PatchSource1 p x ~ PatchSource (p x y)
-         , PatchTarget1 p y ~ PatchTarget (p x y)
-         )
-      ) => PatchHet2 (p :: k -> k -> *) where
+
+class PatchHet2Base (p :: k -> k -> *) where
   type PatchSource1 p :: k -> *
   type PatchTarget1 p :: k -> *
 
-class ( PatchHet2 p
+class ( PatchHet2Base p
+      , PatchHet (p from to)
+      , PatchSource1 p from ~ PatchSource (p from to)
+      , PatchTarget1 p to ~ PatchTarget (p from to)
+      ) => PatchHet2Locally (p :: k -> k -> *) from to where
+instance ( PatchHet2Base p
+         , PatchHet (p from to)
+         , PatchSource1 p from ~ PatchSource (p from to)
+         , PatchTarget1 p to ~ PatchTarget (p from to)
+         ) => PatchHet2Locally (p :: k -> k -> *) from to where
+
+applyHet2Locally
+  :: PatchHet2Locally p from to
+  => p from to
+  -> PatchSource1 p from
+  -> Either (PatchSource1 p from :~: PatchTarget1 p to) (PatchTarget1 p to)
+applyHet2Locally = applyHet
+
+applyAlwaysHet2Locally
+  :: PatchHet2Locally p from to
+  => p from to
+  -> PatchSource1 p from
+  -> PatchTarget1 p to
+applyAlwaysHet2Locally = applyAlwaysHet
+
+-- TODO once we can use quantified constraints, perhaps combine PatchHet2Base and
+-- PatchHet2Locally, or at least get rid of this.
+class PatchHet2Base p => PatchHet2 (p :: k -> k -> *) where
+  applyHet2
+    :: p from to
+    -> PatchSource1 p from
+    -> Either (PatchSource1 p from :~: PatchTarget1 p to) (PatchTarget1 p to)
+
+applyAlwaysHet2
+  :: PatchHet2 p
+  => p from to
+  -> PatchSource1 p from
+  -> PatchTarget1 p to
+applyAlwaysHet2 p t = case applyHet2 p t of
+  Left Refl -> t
+  Right t' -> t'
+
+-- | Connect the classes without quanitified constraints
+newtype ProjectLocal p from to = ProjectLocal { unProjectLocal :: p from to }
+
+instance PatchHet2 p => PatchHet (ProjectLocal p from to) where
+  type PatchSource (ProjectLocal p from to) = PatchSource1 p from
+  type PatchTarget (ProjectLocal p from to) = PatchTarget1 p to
+  applyHet (ProjectLocal p) src = applyHet2 p src
+
+instance PatchHet2 p => PatchHet2Base (ProjectLocal p) where
+  type PatchSource1 (ProjectLocal p) = PatchSource1 p
+  type PatchTarget1 (ProjectLocal p) = PatchTarget1 p
+
+class ( PatchHet2Base p
       , PatchSource1 p ~ PatchTarget1 p
       ) => Patch2 p
-instance ( PatchHet2 p
+instance ( PatchHet2Base p
          , PatchSource1 p ~ PatchTarget1 p
          ) => Patch2 p
 
@@ -106,12 +156,12 @@ data Proxy2 t a b = Proxy2
            )
 
 -- | 'Replace2' can be used as a 'Patch' that always fully replaces the value
-instance PatchHet (Replace2 (t :: k -> *) (a :: k) (b :: k)) where
-  type PatchSource (Replace2 t a b) = t a
-  type PatchTarget (Replace2 t a b) = t b
+instance PatchHet (Replace2 (t :: k -> *) (from :: k) (to :: k)) where
+  type PatchSource (Replace2 t from to) = t from
+  type PatchTarget (Replace2 t from to) = t to
   applyHet (Replace2 val) _ = Right val
 
--- | 'Proxy2' can be used as a 'Patch' that always fully replaces the value
+-- | 'Proxy2' can be used as a 'Patch' that always does nothing
 instance PatchHet (Proxy2 (t :: k -> *) (a :: k) (a :: k)) where
   type PatchSource (Proxy2 t a a) = t a
   type PatchTarget (Proxy2 t a a) = t a

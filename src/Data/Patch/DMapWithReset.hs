@@ -93,10 +93,12 @@ mergeWithKey f g fg = \xs ys -> DMap.mapMaybeWithKey onlyThat $ DMap.unionWithKe
 {-# INLINE mergeWithKey #-}
 
 -- | Apply the insertions or deletions to a given 'DMap'.
-instance (GCompare k, Has (Patches1Locally p) k) => Patch (PatchDMapWithReset k p) where
+instance (GCompare k, Has (Patches1Locally p) k) => PatchHet (PatchDMapWithReset k p) where
 
+  type PatchSource (PatchDMapWithReset k p) = DMap k (Patches1LocallyTarget p)
   type PatchTarget (PatchDMapWithReset k p) = DMap k (Patches1LocallyTarget p)
 
+instance (GCompare k, Has (Patches1Locally p) k) => Patch (PatchDMapWithReset k p) where
   apply = go
     where
       go :: PatchDMapWithReset k p -> DMap k (Patches1LocallyTarget p) -> Maybe (DMap k (Patches1LocallyTarget p))
