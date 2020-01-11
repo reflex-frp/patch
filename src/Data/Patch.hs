@@ -13,27 +13,31 @@ module Data.Patch
   , module X
   ) where
 
+import Control.Applicative
+import Data.Functor.Const (Const (..))
+import Data.Functor.Identity
 import Data.Map.Monoidal (MonoidalMap)
+import Data.Proxy
 #if !MIN_VERSION_base(4,9,0)
 import Data.Semigroup (Semigroup (..), (<>))
 #endif
+import GHC.Generics
 
 import Data.Patch.Class as X
 import Data.Patch.DMap as X hiding (getDeletions)
-import Data.Patch.DMapWithMove as X (PatchDMapWithMove, const2PatchDMapWithMoveWith, mapPatchDMapWithMove,
-                                       patchDMapWithMoveToPatchMapWithMoveWith,
-                                       traversePatchDMapWithMoveWithKey, unPatchDMapWithMove,
-                                       unsafePatchDMapWithMove, weakenPatchDMapWithMoveWith)
+import Data.Patch.DMapWithMove as X
+  ( PatchDMapWithMove, const2PatchDMapWithMoveWith, mapPatchDMapWithMove
+  , patchDMapWithMoveToPatchMapWithMoveWith
+  , traversePatchDMapWithMoveWithKey, unPatchDMapWithMove
+  , unsafePatchDMapWithMove, weakenPatchDMapWithMoveWith
+  )
 import Data.Patch.IntMap as X hiding (getDeletions)
 import Data.Patch.Map as X
-import Data.Patch.MapWithMove as X (PatchMapWithMove, patchMapWithMoveNewElements,
-                                      patchMapWithMoveNewElementsMap, unPatchMapWithMove,
-                                      unsafePatchMapWithMove)
-import GHC.Generics
-import Data.Functor.Identity
-import Data.Functor.Const
-import Data.Proxy
-import Control.Applicative
+import Data.Patch.MapWithMove as X
+  ( PatchMapWithMove, patchMapWithMoveNewElements
+  , patchMapWithMoveNewElementsMap, unPatchMapWithMove
+  , unsafePatchMapWithMove
+  )
 
 -- | A 'Group' is a 'Monoid' where every element has an inverse.
 class (Semigroup q, Monoid q) => Group q where
