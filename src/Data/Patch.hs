@@ -62,8 +62,8 @@ instance (Ord k, Additive q) => Additive (MonoidalMap k q)
 
 -- | Trivial group.
 instance Group () where
-  negateG _ = ()
-  _ ~~ _ = ()
+  negateG ~() = ()
+  ~() ~~ ~() = ()
 instance Additive ()
 
 -- | Product group.  A Pair of groups gives rise to a group
@@ -88,8 +88,8 @@ instance (Additive (f a), Additive (g a)) => Additive ((f :*: g) a)
 
 -- | Trivial group, Functor style
 instance Group (Proxy x) where
-  negateG _ = Proxy
-  _ ~~ _ = Proxy
+  negateG ~Proxy = Proxy
+  ~Proxy ~~ ~Proxy = Proxy
 instance Additive (Proxy x)
 
 -- | Const lifts groups into a functor.
