@@ -51,8 +51,10 @@ class Semigroup q => Additive q where
 -- | The elements of an 'Additive' 'Semigroup' can be considered as patches of their own type.
 newtype AdditivePatch p = AdditivePatch { unAdditivePatch :: p }
 
-instance Additive p => Patch (AdditivePatch p) where
+instance Additive p => PatchHet (AdditivePatch p) where
+  type PatchSource (AdditivePatch p) = p
   type PatchTarget (AdditivePatch p) = p
+instance Additive p => Patch (AdditivePatch p) where
   apply (AdditivePatch p) q = Just $ p <> q
 
 instance (Ord k, Group q) => Group (MonoidalMap k q) where

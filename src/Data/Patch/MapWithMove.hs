@@ -142,9 +142,15 @@ unsafePatchMapWithMove
 unsafePatchMapWithMove = PatchMapWithMove
 
 -- | Apply the insertions, deletions, and moves to a given 'Map'
-instance (Ord k, Patch p) => Patch (PatchMapWithMove k p) where
+instance (Ord k, Patch p) => PatchHet (PatchMapWithMove k p) where
+  type PatchSource (PatchMapWithMove k p) = Map k (PatchSource p)
   type PatchTarget (PatchMapWithMove k p) = Map k (PatchTarget p)
-  apply (PatchMapWithMove m) old = Just $! insertions `Map.union` (old `Map.difference` deletions) --TODO: return Nothing sometimes --Note: the strict application here is critical to ensuring that incremental merges don't hold onto all their prerequisite events forever; can we make this more robust?
+instance (Ord k, Patch p) => Patch (PatchMapWithMove k p) where
+  -- TODO: return Nothing sometimes
+  -- Note: the strict application here is critical to ensuring that incremental
+  -- merges don't hold onto all their prerequisite events forever; can we make
+  -- this more robust?
+  apply (PatchMapWithMove m) old = Just $! insertions `Map.union` (old `Map.difference` deletions)
     where insertions = flip Map.mapMaybeWithKey m $ \_ ni -> case _nodeInfo_from ni of
             From_Insert v -> Just v
             From_Move k p -> applyAlways p <$> Map.lookup k old

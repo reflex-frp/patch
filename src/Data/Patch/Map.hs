@@ -18,8 +18,10 @@ newtype PatchMap k v = PatchMap { unPatchMap :: Map k (Maybe v) }
   deriving (Show, Read, Eq, Ord)
 
 -- | Apply the insertions or deletions to a given 'Map'.
-instance Ord k => Patch (PatchMap k v) where
+instance Ord k => PatchHet (PatchMap k v) where
+  type PatchSource (PatchMap k v) = Map k v
   type PatchTarget (PatchMap k v) = Map k v
+instance Ord k => Patch (PatchMap k v) where
   {-# INLINABLE apply #-}
   apply (PatchMap p) old = Just $! insertions `Map.union` (old `Map.difference` deletions) --TODO: return Nothing sometimes --Note: the strict application here is critical to ensuring that incremental merges don't hold onto all their prerequisite events forever; can we make this more robust?
     where insertions = Map.mapMaybeWithKey (const id) p

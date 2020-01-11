@@ -343,8 +343,10 @@ const2PatchDMapWithMoveWith f (PatchMapWithMove p) = PatchDMapWithMove $ DMap.fr
           }
 
 -- | Apply the insertions, deletions, and moves to a given 'DMap'.
-instance GCompare k => Patch (PatchDMapWithMove k v) where
+instance GCompare k => PatchHet (PatchDMapWithMove k v) where
+  type PatchSource (PatchDMapWithMove k v) = DMap k v
   type PatchTarget (PatchDMapWithMove k v) = DMap k v
+instance GCompare k => Patch (PatchDMapWithMove k v) where
   apply (PatchDMapWithMove p) old = Just $! insertions `DMap.union` (old `DMap.difference` deletions) --TODO: return Nothing sometimes --Note: the strict application here is critical to ensuring that incremental merges don't hold onto all their prerequisite events forever; can we make this more robust?
     where insertions = DMap.mapMaybeWithKey insertFunc p
           insertFunc :: forall a. k a -> NodeInfo k v a -> Maybe (v a)

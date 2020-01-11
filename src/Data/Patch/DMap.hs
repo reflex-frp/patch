@@ -31,8 +31,10 @@ deriving instance GCompare k => Semigroup (PatchDMap k v)
 deriving instance GCompare k => Monoid (PatchDMap k v)
 
 -- | Apply the insertions or deletions to a given 'DMap'.
-instance GCompare k => Patch (PatchDMap k v) where
+instance GCompare k => PatchHet (PatchDMap k v) where
+  type PatchSource (PatchDMap k v) = DMap k v
   type PatchTarget (PatchDMap k v) = DMap k v
+instance GCompare k => Patch (PatchDMap k v) where
   apply (PatchDMap diff) old = Just $! insertions `DMap.union` (old `DMap.difference` deletions) --TODO: return Nothing sometimes --Note: the strict application here is critical to ensuring that incremental merges don't hold onto all their prerequisite events forever; can we make this more robust?
     where insertions = DMap.mapMaybeWithKey (const $ getComposeMaybe) diff
           deletions = DMap.mapMaybeWithKey (const $ nothingToJust . getComposeMaybe) diff
