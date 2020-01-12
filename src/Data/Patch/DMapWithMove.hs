@@ -11,7 +11,6 @@
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
@@ -440,7 +439,7 @@ mapPatchDMapWithMove f g (PatchDMapWithMove m) =
         h = \case
           From_Insert v -> From_Insert $ f v
           From_Delete -> From_Delete
-          From_Move (k :=> (Flip p)) -> From_Move $ k :=> Flip (g p)
+          From_Move (k :=> Flip p) -> From_Move $ k :=> Flip (g p)
         j :: forall a. To k p a -> To k p' a
         j = \case
           To_NonMove -> To_NonMove
@@ -471,9 +470,9 @@ traversePatchDMapWithMoveWithKey
   -> PatchDMapWithMove k p
   -> m (PatchDMapWithMove k p')
 traversePatchDMapWithMoveWithKey f g (PatchDMapWithMove m) =
-  fmap PatchDMapWithMove $ DMap.traverseWithKey (\k  ni -> NodeInfo
-    <$> (h k $ _nodeInfo_from ni)
-    <*> (j k $ _nodeInfo_to ni)) m
+  PatchDMapWithMove <$> DMap.traverseWithKey (\k ni -> NodeInfo
+    <$> h k (_nodeInfo_from ni)
+    <*> j k (_nodeInfo_to ni)) m
   where h :: forall a. k a -> From k p a -> m (From k p' a)
         h k = \case
           From_Insert v -> From_Insert <$> f k v
@@ -505,8 +504,8 @@ nodeInfoMapFromM
   -> NodeInfo k p a
   -> f (NodeInfo k p' a)
 nodeInfoMapFromM f g ni = NodeInfo
-  <$> (f $ _nodeInfo_from ni)
-  <*> (g $ _nodeInfo_to ni)
+  <$> f (_nodeInfo_from ni)
+  <*> g (_nodeInfo_to ni)
 
 -- | Weaken a 'PatchDMapWithMove' to a 'PatchMapWithMove' by weakening the keys
 -- from @k a@ to @'Some' k@ and applying a given weakening function

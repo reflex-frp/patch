@@ -6,12 +6,10 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
@@ -59,7 +57,7 @@ deriving instance ( Ord (k from), Ord (k to)
 
 mapByPatch
   :: PatchTarget1 p0 ~ PatchTarget1 p1
-  => ((p0 from to) -> (p1 from to))
+  => (p0 from to -> p1 from to)
   -> By k p0 from to
   -> By k p1 from to
 mapByPatch f = \case

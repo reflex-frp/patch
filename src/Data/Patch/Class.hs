@@ -1,5 +1,4 @@
 {-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -137,7 +136,7 @@ newtype ProjectLocal p from to = ProjectLocal { unProjectLocal :: p from to }
 instance PatchHet2 p => PatchHet (ProjectLocal p from to) where
   type PatchSource (ProjectLocal p from to) = PatchSource1 p from
   type PatchTarget (ProjectLocal p from to) = PatchTarget1 p to
-  applyHet (ProjectLocal p) src = applyHet2 p src
+  applyHet (ProjectLocal p) = applyHet2 p
 
 instance PatchHet2 p => PatchHet2Base (ProjectLocal p) where
   type PatchSource1 (ProjectLocal p) = PatchSource1 p
