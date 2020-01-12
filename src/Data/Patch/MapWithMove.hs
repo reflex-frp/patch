@@ -41,7 +41,7 @@ deriving instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (PatchMapWithMove k
 data NodeInfo k p = NodeInfo
   { _nodeInfo_from :: !(From k p)
     -- ^ Where do we get the new value for this key?
-  , _nodeInfo_to :: !(To k)
+  , _nodeInfo_to :: !(To k p)
     -- ^ If the old value is being kept (i.e. moved rather than deleted or
     -- replaced), where is it going?
   }
@@ -64,14 +64,23 @@ deriving instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (From k p)
 -- | Describe where a key's old value will go.  If this is 'Just', that means
 -- the key's old value will be moved to the given other key; if it is 'Nothing',
 -- that means it will be deleted.
-type To = Maybe
+data To k p
+  = To_NonMove
+  | To_Move !k !p
+
+deriving instance (Show k, Show p, Show (PatchTarget p)) => Show (To k p)
+deriving instance (Read k, Read p, Read (PatchTarget p)) => Read (To k p)
+deriving instance (Eq k, Eq p, Eq (PatchTarget p)) => Eq (To k p)
+deriving instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (To k p)
 
 -- | Create a 'PatchMapWithMove', validating it
 patchMapWithMove
   :: Ord k => Map k (NodeInfo k p) -> Maybe (PatchMapWithMove k p)
 patchMapWithMove m = if valid then Just $ PatchMapWithMove m else Nothing
   where valid = forwardLinks == backwardLinks
-        forwardLinks = Map.mapMaybe _nodeInfo_to m
+        forwardLinks = flip Map.mapMaybe m $ \x -> case _nodeInfo_to x of
+          To_NonMove -> Nothing
+          To_Move to _ -> Just to
         backwardLinks = Map.fromList $ catMaybes $ flip fmap (Map.toList m) $ \(to, p) ->
           case _nodeInfo_from p of
             From_Move from _ -> Just (from, to)
@@ -82,7 +91,7 @@ patchMapWithMoveInsertAll
   :: Map k (PatchTarget p) -> PatchMapWithMove k p
 patchMapWithMoveInsertAll m = PatchMapWithMove $ flip fmap m $ \v -> NodeInfo
   { _nodeInfo_from = From_Insert v
-  , _nodeInfo_to = Nothing
+  , _nodeInfo_to = To_NonMove
   }
 
 -- | Extract the internal representation of the 'PatchMapWithMove'
@@ -93,7 +102,7 @@ unPatchMapWithMove (PatchMapWithMove p) = p
 -- | Make a @'PatchMapWithMove' k p@ which has the effect of inserting or updating a value @v@ to the given key @k@, like 'Map.insert'.
 insertMapKey
   :: k -> PatchTarget p -> PatchMapWithMove k p
-insertMapKey k v = PatchMapWithMove . Map.singleton k $ NodeInfo (From_Insert v) Nothing
+insertMapKey k v = PatchMapWithMove . Map.singleton k $ NodeInfo (From_Insert v) To_NonMove
 
 -- |Make a @'PatchMapWithMove' k p@ which has the effect of moving the value from the first key @k@ to the second key @k@, equivalent to:
 --
@@ -106,8 +115,8 @@ moveMapKey src dst
   | src == dst = mempty
   | otherwise =
       PatchMapWithMove $ Map.fromList
-        [ (dst, NodeInfo (From_Move src mempty) Nothing)
-        , (src, NodeInfo From_Delete (Just dst))
+        [ (dst, NodeInfo (From_Move src mempty) To_NonMove)
+        , (src, NodeInfo From_Delete (To_Move dst mempty))
         ]
 
 -- |Make a @'PatchMapWithMove' k p@ which has the effect of swapping two keys in the mapping, equivalent to:
@@ -120,19 +129,21 @@ moveMapKey src dst
 --      . Map.delete a . Map.delete b $ map
 -- @
 swapMapKey
-  :: (DecidablyEmpty p, Patch p) => Ord k => k -> k -> PatchMapWithMove k p
+  :: (DecidablyEmpty p, Patch p)
+  => Ord k => k -> k -> PatchMapWithMove k p
 swapMapKey src dst
   | src == dst = mempty
   | otherwise =
     PatchMapWithMove $ Map.fromList
-      [ (dst, NodeInfo (From_Move src mempty) (Just src))
-      , (src, NodeInfo (From_Move dst mempty) (Just dst))
+      [ (dst, NodeInfo (From_Move src mempty) (To_Move dst mempty))
+      , (src, NodeInfo (From_Move dst mempty) (To_Move dst mempty))
       ]
 
--- |Make a @'PatchMapWithMove' k v@ which has the effect of deleting a key in the mapping, equivalent to 'Map.delete'.
+-- | Make a @'PatchMapWithMove' k v@ which has the effect of deleting a key in
+-- the mapping, equivalent to 'Map.delete'.
 deleteMapKey
   :: k -> PatchMapWithMove k v
-deleteMapKey k = PatchMapWithMove . Map.singleton k $ NodeInfo From_Delete Nothing
+deleteMapKey k = PatchMapWithMove . Map.singleton k $ NodeInfo From_Delete To_NonMove
 
 -- | Wrap a @'Map' k (NodeInfo k v)@ representing patch changes into a @'PatchMapWithMove' k v@, without checking any invariants.
 --
@@ -145,6 +156,7 @@ unsafePatchMapWithMove = PatchMapWithMove
 instance (Ord k, Patch p) => PatchHet (PatchMapWithMove k p) where
   type PatchSource (PatchMapWithMove k p) = Map k (PatchSource p)
   type PatchTarget (PatchMapWithMove k p) = Map k (PatchTarget p)
+
 instance (Ord k, Patch p) => Patch (PatchMapWithMove k p) where
   -- TODO: return Nothing sometimes
   -- Note: the strict application here is critical to ensuring that incremental
@@ -188,7 +200,7 @@ patchThatSortsMapWith cmp m = PatchMapWithMove $ Map.fromList $ catMaybes $ zipW
         reverseMapping = Map.fromList $ catMaybes $ zipWith f unsorted sorted
         g (to, _) (from, _) = if to == from then Nothing else
           let Just movingTo = Map.lookup from reverseMapping
-          in Just (to, NodeInfo (From_Move from mempty) $ Just movingTo)
+          in Just (to, NodeInfo (From_Move from mempty) $ To_Move movingTo mempty)
 
 -- | Create a 'PatchMapWithMove' that, if applied to the first 'Map' provided,
 -- will produce a 'Map' with the same values as the second 'Map' but with the
@@ -215,25 +227,32 @@ patchThatChangesMap oldByIndex newByIndex = patch
                       then Map.delete v remainingValues
                       else Map.insert v remainingKeys remainingValues
                 case Map.lookup v remainingValues of
-                  Nothing -> return $ NodeInfo (From_Insert v) $ Just undefined -- There's no existing value we can take
+                  Nothing -> return $ NodeInfo (From_Insert v) $ To_Move undefined undefined -- There's no existing value we can take
                   Just fromKs ->
                     if k `Set.member` fromKs
                     then do
                       putRemainingKeys $ Set.delete k fromKs
-                      return $ NodeInfo (From_Move k mempty) $ Just undefined -- There's an existing value, and it's here, so no patch necessary
+                      return $ NodeInfo (From_Move k mempty) $ To_Move undefined undefined -- There's an existing value, and it's here, so no patch necessary
                     else do
                       (fromK, remainingKeys) <- return . fromJust $ Set.minView fromKs -- There's an existing value, but it's not here; move it here
                       putRemainingKeys remainingKeys
-                      return $ NodeInfo (From_Move fromK mempty) $ Just undefined
+                      return $ NodeInfo (From_Move fromK mempty) $ To_Move undefined undefined
           Map.traverseWithKey f newByIndex
         unusedOldKeys = fold unusedValuesByValue
         pointlessMove k = \case
           From_Move k' _ | k == k' -> True
           _ -> False
         keyWasMoved k = if k `Map.member` oldByIndex && not (k `Set.member` unusedOldKeys)
-          then Just undefined
-          else Nothing
-        patch = unsafePatchMapWithMove $ Map.filterWithKey (\k -> not . pointlessMove k . _nodeInfo_from) $ Map.mergeWithKey (\k a _ -> Just $ nodeInfoSetTo (keyWasMoved k) a) (Map.mapWithKey $ \k -> nodeInfoSetTo $ keyWasMoved k) (Map.mapWithKey $ \k _ -> NodeInfo From_Delete $ keyWasMoved k) insertsAndMoves oldByIndex
+          then To_Move undefined undefined
+          else To_NonMove
+        patch = unsafePatchMapWithMove $ Map.filterWithKey
+          (\k -> not . pointlessMove k . _nodeInfo_from)
+          $ Map.mergeWithKey
+            (\k a _ -> Just $ nodeInfoSetTo (keyWasMoved k) a)
+            (Map.mapWithKey $ \k -> nodeInfoSetTo $ keyWasMoved k)
+            (Map.mapWithKey $ \k _ -> NodeInfo From_Delete $ keyWasMoved k)
+            insertsAndMoves
+            oldByIndex
 
 -- | Change the 'From' value of a 'NodeInfo'
 nodeInfoMapFrom
@@ -248,15 +267,16 @@ nodeInfoMapMFrom f ni = fmap (\result -> ni { _nodeInfo_from = result }) $ f $ _
 
 -- | Set the 'To' field of a 'NodeInfo'
 nodeInfoSetTo
-  :: To k -> NodeInfo k v -> NodeInfo k v
+  :: To k p -> NodeInfo k p -> NodeInfo k p
 nodeInfoSetTo to ni = ni { _nodeInfo_to = to }
 
--- |Helper data structure used for composing patches using the monoid instance.
-data Fixup k v
+-- | Helper data structure used for composing patches using the monoid instance.
+data Fixup k p
    = Fixup_Delete
-   | Fixup_Update (These (From k v) (To k))
+   | Fixup_Update (These (From k p) (To k p))
 
--- |Compose patches having the same effect as applying the patches in turn: @'applyAlways' (p <> q) == 'applyAlways' p . 'applyAlways' q@
+-- | Compose patches having the same effect as applying the patches in turn:
+-- @'applyAlways' (p <> q) == 'applyAlways' p . 'applyAlways' q@
 instance ( Ord k
          , DecidablyEmpty p
          , Patch p
@@ -264,18 +284,24 @@ instance ( Ord k
   PatchMapWithMove ma <> PatchMapWithMove mb = PatchMapWithMove m
     where
       connections = Map.toList $ Map.intersectionWithKey (\_ a b -> (_nodeInfo_to a, _nodeInfo_from b)) ma mb
-      h :: (k, (Maybe k, From k p)) -> [(k, Fixup k p)]
-      h (_, (mToAfter, editBefore)) = case (mToAfter, editBefore) of
-        (Just toAfter, From_Move fromBefore p)
-          | fromBefore == toAfter && isNull p
+      h :: (k, (To k p, From k p)) -> [(k, Fixup k p)]
+      h (_, (editAfter, editBefore)) = case (editAfter, editBefore) of
+        (To_Move toAfter p1, From_Move fromBefore p0)
+          | fromBefore == toAfter && isNull p0
             -> [(toAfter, Fixup_Delete)]
           | otherwise
-            -> [ (toAfter, Fixup_Update (This editBefore))
-               , (fromBefore, Fixup_Update (That mToAfter))
+            -> [ (toAfter, Fixup_Update (This $ From_Move fromBefore $ p1 <> p0))
+               , (fromBefore, Fixup_Update (That $ To_Move toAfter $ p1 <> p0))
                ]
-        (Nothing, From_Move fromBefore _) -> [(fromBefore, Fixup_Update (That mToAfter))] -- The item is destroyed in the second patch, so indicate that it is destroyed in the source map
-        (Just toAfter, _) -> [(toAfter, Fixup_Update (This editBefore))]
-        (Nothing, _) -> []
+        (To_NonMove, From_Move fromBefore _) ->
+           -- The item is destroyed in the second patch, so indicate that it is
+           -- destroyed in the source map
+          [(fromBefore, Fixup_Update (That editAfter))]
+        (To_Move toAfter p, From_Insert val) ->
+          [(toAfter, Fixup_Update $ This $ From_Insert $ applyAlways p val)]
+        (To_Move toAfter _, From_Delete) ->
+          [(toAfter, Fixup_Update $ This From_Delete)]
+        (To_NonMove, _) -> []
       mergeFixups _ Fixup_Delete Fixup_Delete = Fixup_Delete
       mergeFixups _ (Fixup_Update a) (Fixup_Update b)
         | This x <- a, That y <- b
@@ -291,13 +317,7 @@ instance ( Ord k
       applyFixup _ ni = \case
         Fixup_Delete -> Nothing
         Fixup_Update u -> Just $ NodeInfo
-          { _nodeInfo_from = case _nodeInfo_from ni of
-              f@(From_Move _ p') -> case getHere u of -- The `from` fixup comes from the "old" patch
-                Nothing -> f -- If there's no `from` fixup, just use the "new" `from`
-                Just (From_Insert v) -> From_Insert $ applyAlways p' v
-                Just From_Delete -> From_Delete
-                Just (From_Move oldKey p) -> From_Move oldKey $ p' <> p
-              _ -> error "PatchMapWithMove: fixup for non-move From"
+          { _nodeInfo_from = fromMaybe (_nodeInfo_from ni) $ getHere u
           , _nodeInfo_to = fromMaybe (_nodeInfo_to ni) $ getThere u
           }
       m = Map.differenceWithKey applyFixup (Map.unionWithKey combineNodeInfos ma mb) fixups
@@ -313,7 +333,8 @@ instance ( Ord k
         That b -> Just b
 
 --TODO: Figure out how to implement this in terms of PatchDMapWithMove rather than duplicating it here
--- |Compose patches having the same effect as applying the patches in turn: @'applyAlways' (p <> q) == 'applyAlways' p . 'applyAlways' q@
+-- | Compose patches having the same effect as applying the patches in turn:
+-- @'applyAlways' (p <> q) == 'applyAlways' p . 'applyAlways' q@
 instance ( Ord k
          , Monoid p
          , DecidablyEmpty p

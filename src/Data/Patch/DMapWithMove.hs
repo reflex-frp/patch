@@ -21,39 +21,35 @@
 module Data.Patch.DMapWithMove where
 
 import qualified Control.Category as Cat
-import Data.Constraint.Extras
-import Data.Constraint.Compose
-import Data.Dependent.Map (DMap, DSum (..), GCompare (..))
+--import qualified Control.Category.DecidablyEmpty as Cat
+import Data.Constraint.Extras (Has')
+import Data.Dependent.Map (DMap)
+import Data.Dependent.Sum (DSum (..))
 import qualified Data.Dependent.Map as DMap
-import Data.Functor.Constant
+import Data.Functor.Constant (Constant (..))
 import Data.Functor.Misc
-import Data.Functor.Product
-import Data.GADT.Compare (GEq (..), GCompare)
+  ( Const2 (..), Proxy3 (..)
+  , weakenDMapWith
+  , dmapToMapWith
+  )
+import Data.Functor.Product (Product (..))
+import Data.GADT.Compare (GEq (..), GCompare (..))
 import Data.GADT.Show (GRead, GShow, gshow)
 import qualified Data.Map as Map
 import Data.Maybe
-import Data.Monoid.DecidablyEmpty
 import Data.Semigroup (Semigroup (..), (<>))
 import Data.Semigroupoid as Cat
 import Data.Some (Some(Some))
-import Data.Proxy
-import Data.These
-import Data.Type.Equality ((:~:) (..))
-import Data.Kind (Constraint)
+import Data.Proxy (Proxy (..))
+import Data.These (These (..))
 
 import Data.Patch.Class
+  ( Patch (..), PatchHet (..)
+  , PatchHet2 (..), PatchSource1, PatchTarget1
+  , applyAlwaysHet2
+  )
 import Data.Patch.MapWithMove (PatchMapWithMove (..))
 import qualified Data.Patch.MapWithMove as MapWithMove
-
--- | Composition for constraints.
-class p (f a a) => DupC (p :: k2 -> Constraint) (f :: k1 -> k1 -> k2) (a :: k1)
-instance p (f a a) => DupC p f a
-
-type ConstraintsForZip f (c :: k -> Constraint) (g :: k' -> k' -> k) =
-  ConstraintsFor f (DupC c g)
-
-type HasZip (c :: k -> Constraint) f (g :: k' -> k' -> k) =
-  (ArgDict (DupC c g) f, ConstraintsForZip f c g)
 
 -- | Like 'PatchMapWithMove', but for 'DMap'. Each key carries a 'NodeInfo'
 -- which describes how it will be changed by the patch and connects move sources
@@ -68,22 +64,22 @@ type HasZip (c :: k -> Constraint) f (g :: k' -> k' -> k) =
 --    destination)@)
 newtype PatchDMapWithMove k v = PatchDMapWithMove (DMap k (NodeInfo k v))
 
-deriving instance ( GShow k
-                  , HasZip Show k p
-                  , Has' Show k (PatchTarget1 p)
-                  ) => Show (PatchDMapWithMove k p)
-deriving instance ( GRead k
-                  , HasZip Read k p
-                  , Has' Read k (PatchTarget1 p)
-                  ) => Read (PatchDMapWithMove k p)
-deriving instance ( GEq k
-                  , HasZip Eq k p
-                  , Has' Eq k (PatchTarget1 p)
-                  ) => Eq (PatchDMapWithMove k p)
-deriving instance ( GCompare k
-                  , HasZip Ord k p
-                  , Has' Ord k (PatchTarget1 p)
-                  ) => Ord (PatchDMapWithMove k p)
+--deriving instance ( GShow k
+--                  , HasZip Show k p
+--                  , Has' Show k (PatchTarget1 p)
+--                  ) => Show (PatchDMapWithMove k p)
+--deriving instance ( GRead k
+--                  , HasZip Read k p
+--                  , Has' Read k (PatchTarget1 p)
+--                  ) => Read (PatchDMapWithMove k p)
+--deriving instance ( GEq k
+--                  , HasZip Eq k p
+--                  , Has' Eq k (PatchTarget1 p)
+--                  ) => Eq (PatchDMapWithMove k p)
+--deriving instance ( GCompare k
+--                  , HasZip Ord k p
+--                  , Has' Ord k (PatchTarget1 p)
+--                  ) => Ord (PatchDMapWithMove k p)
 
 -- | Structure which represents what changes apply to a particular key.
 -- @_nodeInfo_from@ specifies what happens to this key, and in particular what
@@ -97,91 +93,22 @@ data NodeInfo k p a = NodeInfo
   -- @ComposeMaybe (Just k)@ when there is a corresponding 'From_Move'.
   }
 
-deriving instance ( Show (k a)
-                  , Show (p a a)
-                  , Show (PatchTarget1 p a)
-                  ) => Show (NodeInfo k p a)
-deriving instance ( Read (k a)
-                  , Read (p a a)
-                  , Read (PatchTarget1 p a)
-                  ) => Read (NodeInfo k p a)
-deriving instance ( Eq (k a)
-                  , Eq (p a a)
-                  , Eq (PatchTarget1 p a)
-                  ) => Eq (NodeInfo k p a)
-deriving instance ( Ord (k a)
-                  , Ord (p a a)
-                  , Ord (PatchTarget1 p a)
-                  ) => Ord (NodeInfo k p a)
-
--- | Structure describing a particular change to a key, be it inserting a new
--- key (@By_Insert@), updating an existing key (@By_Insert@ again), deleting
--- a key (@By_Delete@), or moving a key (@By_Move@).
---
--- This type isn't used directly as the from field patch, but is instead wrapped
--- in an existential. However, it is nice to be able to reason about this in
--- isolation as it is itself a @Semigroupoid@ when the underlying patch is.
-data By (k :: a -> *) (p :: a -> a -> *) :: a -> a -> * where
-  -- | Insert a new or update an existing key with the given value @PatchTarget1
-  -- p a@
-  By_Insert :: PatchTarget1 p to -> By k p from to
-  -- | Delete the existing key
-  By_Delete :: By k p from to
-  -- | Move the value from the given key @k a@ to this key. The source key
-  -- should also have an entry in the patch giving the current key as
-  -- @_nodeInfo_to@, usually but not necessarily with @By_Delete@.
-  By_Move :: !(k from) -> p from to -> By k p from to
-
-deriving instance ( Show (k to)
-                  , Show (p from to)
-                  , Show (PatchTarget1 p to)
-                  ) => Show (By k p from to)
-deriving instance ( Read (k to)
-                  , Read (p from to)
-                  , Read (PatchTarget1 p to)
-                  ) => Read (By k p from to)
-deriving instance ( Eq (k to)
-                  , Eq (p from to)
-                  , Eq (PatchTarget1 p to)
-                  ) => Eq (By k p from to)
-deriving instance ( Ord (k to)
-                  , Ord (p from to)
-                  , Ord (PatchTarget1 p to)
-                  ) => Ord (By k p from to)
-
-mapByPatch
-  :: PatchTarget1 p0 ~ PatchTarget1 p1
-  => ((p0 from to) -> (p1 from to))
-  -> By k p0 from to
-  -> By k p1 from to
-mapByPatch f = \case
-  By_Insert v -> By_Insert v
-  By_Delete -> By_Delete
-  By_Move k p -> By_Move k $ f p
-
--- | Compose patches having the same effect as applying the patches in turn:
--- @'applyAlways' (p <> q) == 'applyAlways' p . 'applyAlways' q@
-instance ( PatchSource1 p ~ PatchTarget1 p
-         , Cat.Semigroupoid p
-         , PatchHet2 p
-         ) => Cat.Semigroupoid (By k p) where
-  o p0 p1 = mapByPatch unProjectLocal $
-    oLocal (mapByPatch ProjectLocal p0) (mapByPatch ProjectLocal p1)
-
-oLocal
-  :: ( PatchSource1 p ~ PatchTarget1 p
-     , PatchHet2Locally p between after
-     )
-  => By k p between after
-  -> By k p before between
-  -> By k p before after
-By_Insert new `oLocal` _ = By_Insert new
-By_Delete `oLocal` _ = By_Delete
-By_Move _ x `oLocal` By_Insert y = By_Insert $ applyAlwaysHet2 x y
-By_Move _ x `oLocal` By_Move src y = By_Move src $ x `o` y
-By_Move _ _ `oLocal` By_Delete = By_Delete
-
-newtype Flip p to from = Flip (p from to)
+--deriving instance ( Show (k a)
+--                  , Show (p a a)
+--                  , Show (PatchTarget1 p a)
+--                  ) => Show (NodeInfo k p a)
+--deriving instance ( Read (k a)
+--                  , Read (p a a)
+--                  , Read (PatchTarget1 p a)
+--                  ) => Read (NodeInfo k p a)
+--deriving instance ( Eq (k a)
+--                  , Eq (p a a)
+--                  , Eq (PatchTarget1 p a)
+--                  ) => Eq (NodeInfo k p a)
+--deriving instance ( Ord (k a)
+--                  , Ord (p a a)
+--                  , Ord (PatchTarget1 p a)
+--                  ) => Ord (NodeInfo k p a)
 
 -- | Structure describing a particular change to a key, be it inserting a new
 -- key (@From_Insert@), updating an existing key (@From_Insert@ again), deleting
@@ -201,24 +128,29 @@ data From (k :: a -> *) (p :: a -> a -> *) :: a -> * where
   -- @_nodeInfo_to@, usually but not necessarily with @From_Delete@.
   From_Move :: !(DSum k (Flip p to)) -> From k p to
 
-deriving instance ( Show (k a)
-                  , Show (p a a)
+deriving instance ( Show (k a), GShow k
+                  , Has' Show k (Flip p a)
                   , Show (PatchTarget1 p a)
                   ) => Show (From k p a)
-deriving instance ( Read (k a)
-                  , Read (p a a)
+deriving instance ( Read (k a), GRead k
+                  , Has' Read k (Flip p a)
                   , Read (PatchTarget1 p a)
                   ) => Read (From k p a)
-
 deriving instance ( GEq k
-                  , HasZip Eq k p
+                  , Has' Eq k (Flip p a)
                   , Eq (PatchTarget1 p a)
                   ) => Eq (From k p a)
-
 deriving instance ( GCompare k
-                  , HasZip Ord k p
+                  , Has' Eq k (Flip p a) -- superclass bug
+                  , Has' Ord k (Flip p a)
                   , Ord (PatchTarget1 p a)
                   ) => Ord (From k p a)
+
+newtype Flip p to from = Flip (p from to)
+
+instance Cat.Category p => Cat.Category (Flip (p :: k -> k -> *)) where
+  id = Flip Cat.id
+  Flip y . Flip x = Flip $ x Cat.. y
 
 -- | The "to" part of a 'NodeInfo'. Rather than be built out of @From@ like @From@
 -- is, we store just the information necessary to compose a @To@ and @From@ like
@@ -231,37 +163,23 @@ data To (k :: a -> *) (p :: a -> a -> *) :: a -> * where
   -- @_nodeInfo_from@, usually but not necessarily with @To_Delete@.
   To_Move :: !(DSum k (p from)) -> To k p from
 
-deriving instance ( Show (k a)
-                  , Show (p a a)
+deriving instance ( Show (k a), GShow k
+                  , Has' Show k (p a)
                   , Show (PatchTarget1 p a)
                   ) => Show (To k p a)
-deriving instance ( Read (k a)
-                  , Read (p a a)
+deriving instance ( Read (k a), GRead k
+                  , Has' Read k (p a)
                   , Read (PatchTarget1 p a)
                   ) => Read (To k p a)
-
 deriving instance ( GEq k
-                  , HasZip Eq k p
+                  , Has' Eq k (p a)
                   , Eq (PatchTarget1 p a)
                   ) => Eq (To k p a)
-
 deriving instance ( GCompare k
-                  , HasZip Ord k p
+                  , Has' Eq k (p a) -- superclass bug
+                  , Has' Ord k (p a)
                   , Ord (PatchTarget1 p a)
                   ) => Ord (To k p a)
-
---oToFrom
---  :: ( PatchSource1 p ~ PatchTarget1 p
---     , PatchHet2 p
---     )
---  => To k p between
---  -> From k p between
---  -> DSum k (From k p)
---From_Insert new `oToFrom` _ = From_Insert new
---From_Delete `oToFrom` _ = From_Delete
---From_Move _ x `oToFrom` From_Insert y = From_Insert $ applyAlwaysHet2 x y
---From_Move _ x `oToFrom` From_Move src y = From_Move src $ x `o` y
---From_Move _ _ `oToFrom` From_Delete = From_Delete
 
 -- |Test whether a 'PatchDMapWithMove' satisfies its invariants.
 validPatchDMapWithMove
@@ -320,7 +238,7 @@ data Fixup k p a
 -- @'applyAlways' (p <> q) == 'applyAlways' p . 'applyAlways' q@
 instance ( GCompare k
          , Cat.Semigroupoid p
-         -- , DecidablyEmpty p
+         -- , Cat.DecidablyEmpty p
          , PatchHet2 p
          , PatchSource1 p ~ PatchTarget1 p
          ) => Semigroup (PatchDMapWithMove k p) where
@@ -332,12 +250,12 @@ instance ( GCompare k
         ma
         mb
       h :: DSum k (Pair1 (To k p) (From k p)) -> [DSum k (Fixup k p)]
-      h ((between :: k between) :=> Pair1 editAfter editBefore) = case (editAfter, editBefore) of
+      h ((_ :: k between) :=> Pair1 editAfter editBefore) = case (editAfter, editBefore) of
         (To_Move ((toAfter :: k after) :=> p1), From_Move ((fromBefore :: k before) :=> Flip p0)) ->
-          case toAfter `geq` fromBefore of
-            Just Refl | isNull p0 ->
-              [ toAfter :=> Fixup_Delete ]
-            _ ->
+          --case toAfter `geq` fromBefore of
+          --  Just Refl | Just Refl <- Cat.isId p0 ->
+          --    [ toAfter :=> Fixup_Delete ]
+          --  _ ->
               [ toAfter :=> Fixup_Update (This $ From_Move $ fromBefore :=> (Flip $ p1 `o` p0))
               , fromBefore :=> Fixup_Update (That $ To_Move $ toAfter :=> (p1 `o` p0))
               ]
@@ -347,7 +265,7 @@ instance ( GCompare k
           [fromBefore :=> Fixup_Update (That To_NonMove)]
         (To_Move (toAfter :=> p), From_Insert val) ->
           [toAfter :=> Fixup_Update (This $ From_Insert $ applyAlwaysHet2 p val)]
-        (To_Move (toAfter :=> p), From_Delete) ->
+        (To_Move (toAfter :=> _), From_Delete) ->
           [toAfter :=> Fixup_Update (This From_Delete)]
         (To_NonMove, _) ->
           []
@@ -414,25 +332,31 @@ PatchDMapWithMove dstAfter srcAfter `mappendPatchDMapWithMoveSlow` PatchDMapWith
     src = DMap.mapMaybeWithKey g $ DMap.union srcAfter srcBefore
 -}
 
--- |Make a @'PatchDMapWithMove' k v@ which has the effect of inserting or updating a value @PatchTarget1 p a@ to the given key @k a@, like 'DMap.insert'.
+-- | Make a @'PatchDMapWithMove' k v@ which has the effect of inserting or
+-- updating a value @PatchTarget1 p a@ to the given key @k a@, like
+-- 'DMap.insert'.
 insertDMapKey :: k a -> PatchTarget1 p a -> PatchDMapWithMove k p
 insertDMapKey k v =
   PatchDMapWithMove . DMap.singleton k $ NodeInfo (From_Insert v) To_NonMove
 
--- |Make a @'PatchDMapWithMove' k v@ which has the effect of moving the value from the first key @k a@ to the second key @k a@, equivalent to:
+-- | Make a @'PatchDMapWithMove' k v@ which has the effect of moving the value
+-- from the first key @k a@ to the second key @k a@, equivalent to:
 --
 -- @
 --     'DMap.delete' src (maybe dmap ('DMap.insert' dst) (DMap.lookup src dmap))
 -- @
-moveDMapKey :: GCompare k => k a -> k a -> PatchDMapWithMove k (Proxy2 v)
+moveDMapKey
+  :: GCompare k
+  => k a -> k a -> PatchDMapWithMove k (Proxy3 v)
 moveDMapKey src dst = case src `geq` dst of
   Nothing -> PatchDMapWithMove $ DMap.fromList
-    [ dst :=> NodeInfo (From_Move (src :=> Cat.id)) To_NonMove
-    , src :=> NodeInfo From_Delete (To_Move $ dst :=> Proxy2)
+    [ dst :=> NodeInfo (From_Move (src :=> Flip Proxy3)) To_NonMove
+    , src :=> NodeInfo From_Delete (To_Move $ dst :=> Proxy3)
     ]
-  Just _ -> mempty
+  Just _ -> PatchDMapWithMove DMap.empty
 
--- |Make a @'PatchDMapWithMove' k v@ which has the effect of swapping two keys in the mapping, equivalent to:
+-- | Make a @'PatchDMapWithMove' k v@ which has the effect of swapping two keys
+-- in the mapping, equivalent to:
 --
 -- @
 --     let aMay = DMap.lookup a dmap
@@ -441,17 +365,18 @@ moveDMapKey src dst = case src `geq` dst of
 --      . maybe id (DMap.insert b) (aMay `mplus` bMay)
 --      . DMap.delete a . DMap.delete b $ dmap
 -- @
-swapDMapKey :: GCompare k => k a -> k a -> PatchDMapWithMove k v
+swapDMapKey :: GCompare k => k a -> k a -> PatchDMapWithMove k (Proxy3 v)
 swapDMapKey src dst = case src `geq` dst of
   Nothing -> PatchDMapWithMove $ DMap.fromList
-    [ dst :=> NodeInfo (From_Move (src :=> Cat.id)) (ComposeMaybe $ Just src)
-    , src :=> NodeInfo (From_Move (dst :=> Cat.id)) (To_Move $ dst :=> Proxy2)
+    [ dst :=> NodeInfo (From_Move (src :=> Flip Proxy3)) (To_Move $ src :=> Proxy3)
+    , src :=> NodeInfo (From_Move (dst :=> Flip Proxy3)) (To_Move $ dst :=> Proxy3)
     ]
-  Just _ -> mempty
+  Just _ -> PatchDMapWithMove DMap.empty
 
--- |Make a @'PatchDMapWithMove' k v@ which has the effect of deleting a key in the mapping, equivalent to 'DMap.delete'.
+-- | Make a @'PatchDMapWithMove' k v@ which has the effect of deleting a key in
+-- the mapping, equivalent to 'DMap.delete'.
 deleteDMapKey :: k a -> PatchDMapWithMove k v
-deleteDMapKey k = PatchDMapWithMove $ DMap.singleton k $ NodeInfo From_Delete $ ComposeMaybe Nothing
+deleteDMapKey k = PatchDMapWithMove $ DMap.singleton k $ NodeInfo From_Delete To_NonMove
 
 {-
 k1, k2 :: Const2 Int () ()
@@ -477,17 +402,20 @@ dst (PatchDMapWithMove x _) = x
 src (PatchDMapWithMove _ x) = x
 -}
 
--- |Extract the 'DMap' representing the patch changes from the 'PatchDMapWithMove'.
+-- | Extract the 'DMap' representing the patch changes from the
+-- 'PatchDMapWithMove'.
 unPatchDMapWithMove :: PatchDMapWithMove k v -> DMap k (NodeInfo k v)
 unPatchDMapWithMove (PatchDMapWithMove p) = p
 
--- |Wrap a 'DMap' representing patch changes into a 'PatchDMapWithMove', without checking any invariants.
+-- | Wrap a 'DMap' representing patch changes into a 'PatchDMapWithMove',
+-- without checking any invariants.
 --
 -- __Warning:__ when using this function, you must ensure that the invariants of 'PatchDMapWithMove' are preserved; they will not be checked.
 unsafePatchDMapWithMove :: DMap k (NodeInfo k v) -> PatchDMapWithMove k v
 unsafePatchDMapWithMove = PatchDMapWithMove
 
--- |Wrap a 'DMap' representing patch changes into a 'PatchDMapWithMove' while checking invariants. If the invariants are satisfied, @Right p@ is returned
+-- | Wrap a 'DMap' representing patch changes into a 'PatchDMapWithMove' while
+-- checking invariants. If the invariants are satisfied, @Right p@ is returned
 -- otherwise @Left errors@.
 patchDMapWithMove :: (GCompare k, GShow k) => DMap k (NodeInfo k v) -> Either [String] (PatchDMapWithMove k v)
 patchDMapWithMove dm =
@@ -495,20 +423,28 @@ patchDMapWithMove dm =
     [] -> Right $ unsafePatchDMapWithMove dm
     errs -> Left errs
 
--- |Map a natural transform @v -> v'@ over the given patch, transforming @'PatchDMapWithMove' k v@ into @'PatchDMapWithMove' k v'@.
+-- | Map a natural transform @v -> v'@ over the given patch, transforming
+-- @'PatchDMapWithMove' k v@ into @'PatchDMapWithMove' k v'@.
 mapPatchDMapWithMove
   :: forall k p p'
   .  (forall a. PatchTarget1 p a -> PatchTarget1 p' a)
   -> (forall from to. p from to -> p' from to)
   -> PatchDMapWithMove k p
   -> PatchDMapWithMove k p'
-mapPatchDMapWithMove f g (PatchDMapWithMove p) = PatchDMapWithMove $
-  DMap.map (\ni -> ni { _nodeInfo_from = g $ _nodeInfo_from ni }) p
-  where g :: forall a. From k PatchTarget1 p a -> From k PatchTarget1 p' a
-        g = \case
+mapPatchDMapWithMove f g (PatchDMapWithMove m) =
+  PatchDMapWithMove $ DMap.map (\ni -> NodeInfo
+    { _nodeInfo_from = h $ _nodeInfo_from ni
+    , _nodeInfo_to = j $ _nodeInfo_to ni
+    }) m
+  where h :: forall a. From k p a -> From k p' a
+        h = \case
           From_Insert v -> From_Insert $ f v
           From_Delete -> From_Delete
-          From_Move k p -> From_Move k $ g p
+          From_Move (k :=> (Flip p)) -> From_Move $ k :=> Flip (g p)
+        j :: forall a. To k p a -> To k p' a
+        j = \case
+          To_NonMove -> To_NonMove
+          To_Move (k :=> p) -> To_Move $ k :=> g p
 
 -- | Traverse an effectful function @forall a. PatchTarget1 p a -> m (v ' a)@
 -- over the given patch, transforming @'PatchDMapWithMove' k v@ into @m
@@ -517,9 +453,12 @@ traversePatchDMapWithMove
   :: forall m k p p'
   . Applicative m
   => (forall a. PatchTarget1 p a -> m (PatchTarget1 p' a))
+  -> (forall from to. p from to -> m (p' from to))
   -> PatchDMapWithMove k p
   -> m (PatchDMapWithMove k p')
-traversePatchDMapWithMove f = traversePatchDMapWithMoveWithKey $ const f
+traversePatchDMapWithMove f g = traversePatchDMapWithMoveWithKey
+  (\_ -> f)
+  (\_ _ -> g)
 
 -- | Map an effectful function @forall a. k a -> PatchTarget1 p a -> m (v ' a)@
 -- over the given patch, transforming @'PatchDMapWithMove' k v@ into @m
@@ -528,49 +467,67 @@ traversePatchDMapWithMoveWithKey
   :: forall m k p p'
   . Applicative m
   => (forall a. k a -> PatchTarget1 p a -> m (PatchTarget1 p' a))
+  -> (forall from to. k from -> k to -> p from to -> m (p' from to))
   -> PatchDMapWithMove k p
   -> m (PatchDMapWithMove k p')
-traversePatchDMapWithMoveWithKey f (PatchDMapWithMove p) =
-  PatchDMapWithMove <$> DMap.traverseWithKey (nodeInfoMapFromM . g) p
-  where g :: forall a. k a -> From k PatchTarget1 p a -> m (From k PatchTarget1 p' a)
-        g k = \case
+traversePatchDMapWithMoveWithKey f g (PatchDMapWithMove m) =
+  fmap PatchDMapWithMove $ DMap.traverseWithKey (\k  ni -> NodeInfo
+    <$> (h k $ _nodeInfo_from ni)
+    <*> (j k $ _nodeInfo_to ni)) m
+  where h :: forall a. k a -> From k p a -> m (From k p' a)
+        h k = \case
           From_Insert v -> From_Insert <$> f k v
           From_Delete -> pure From_Delete
-          From_Move fromKey -> pure $ From_Move fromKey
+          From_Move (fromKey :=> Flip p) -> From_Move . (fromKey :=>) . Flip <$> g fromKey k p
+        j :: forall a. k a -> To k p a -> m (To k p' a)
+        j k = \case
+          To_NonMove -> pure To_NonMove
+          To_Move (toKey :=> p) -> To_Move . (toKey :=>) <$> g k toKey p
 
 -- | Map a function which transforms @'From k PatchTarget1 p a@ into a @'From k
 -- PatchTarget1 p' a@ over a @'NodeInfo' k PatchTarget1 p a@.
 nodeInfoMapFrom
   :: (From k p a -> From k p' a)
+  -> (To k p a -> To k p' a)
   -> NodeInfo k p a
   -> NodeInfo k p' a
-nodeInfoMapFrom f ni = ni { _nodeInfo_from = f $ _nodeInfo_from ni }
+nodeInfoMapFrom f g ni = NodeInfo
+  { _nodeInfo_from = f $ _nodeInfo_from ni
+  , _nodeInfo_to = g $ _nodeInfo_to ni
+  }
 
 -- | Map an effectful function which transforms @'From k PatchTarget1 p a@ into
 -- a @f ('From k PatchTarget1 p' a)@ over a @'NodeInfo' k PatchTarget1 p a@.
 nodeInfoMapFromM
-  :: Functor f
+  :: Applicative f
   => (From k p a -> f (From k p' a))
+  -> (To k p a -> f (To k p' a))
   -> NodeInfo k p a
   -> f (NodeInfo k p' a)
-nodeInfoMapFromM f ni = fmap (\result -> ni { _nodeInfo_from = result }) $ f $ _nodeInfo_from ni
+nodeInfoMapFromM f g ni = NodeInfo
+  <$> (f $ _nodeInfo_from ni)
+  <*> (g $ _nodeInfo_to ni)
 
 -- | Weaken a 'PatchDMapWithMove' to a 'PatchMapWithMove' by weakening the keys
 -- from @k a@ to @'Some' k@ and applying a given weakening function
 -- @PatchTarget1 p a -> v'@ to values.
 weakenPatchDMapWithMoveWith
-  :: forall k p v'
-  .  (forall a. PatchTarget1 p a -> v')
+  :: forall k p p'
+  .  (forall a. PatchTarget1 p a -> PatchTarget p')
+  -> (forall from to. p from to -> p')
   -> PatchDMapWithMove k p
-  -> PatchMapWithMove (Some k) (Proxy v')
-weakenPatchDMapWithMoveWith f (PatchDMapWithMove p) = PatchMapWithMove $ weakenDMapWith g p
-  where g :: forall a. NodeInfo k PatchTarget1 p a -> MapWithMove.NodeInfo (Some k) (Proxy v')
-        g ni = MapWithMove.NodeInfo
+  -> PatchMapWithMove (Some k) p'
+weakenPatchDMapWithMoveWith f g (PatchDMapWithMove m) =
+  PatchMapWithMove $ weakenDMapWith h m
+  where h :: forall a. NodeInfo k p a -> MapWithMove.NodeInfo (Some k) p'
+        h ni = MapWithMove.NodeInfo
           { MapWithMove._nodeInfo_from = case _nodeInfo_from ni of
               From_Insert v -> MapWithMove.From_Insert $ f v
               From_Delete -> MapWithMove.From_Delete
-              From_Move k -> MapWithMove.From_Move (Some k) Proxy
-          , MapWithMove._nodeInfo_to = Some <$> getComposeMaybe (_nodeInfo_to ni)
+              From_Move (k :=> Flip p) -> MapWithMove.From_Move (Some k) $ g p
+          , MapWithMove._nodeInfo_to = case _nodeInfo_to ni of
+              To_NonMove -> MapWithMove.To_NonMove
+              To_Move (k :=> p) -> MapWithMove.To_Move (Some k) $ g p
           }
 
 -- | "Weaken" a @'PatchDMapWithMove' (Const2 k a) v@ to a @'PatchMapWithMove' k
@@ -578,17 +535,22 @@ weakenPatchDMapWithMoveWith f (PatchDMapWithMove p) = PatchMapWithMove $ weakenD
 -- dependency in the typing and all points are already @a@, hence the function
 -- to map each value to @v'@ is not higher rank.
 patchDMapWithMoveToPatchMapWithMoveWith
-  :: forall k p v' a. (PatchTarget1 p a -> v')
+  :: forall k p p' a
+  . (PatchTarget1 p a -> PatchTarget p')
+  -> (p a a -> p')
   -> PatchDMapWithMove (Const2 k a) p
-  -> PatchMapWithMove k (Proxy v')
-patchDMapWithMoveToPatchMapWithMoveWith f (PatchDMapWithMove p) = PatchMapWithMove $ dmapToMapWith g p
-  where g :: NodeInfo (Const2 k a) PatchTarget1 p a -> MapWithMove.NodeInfo k (Proxy v')
-        g ni = MapWithMove.NodeInfo
+  -> PatchMapWithMove k p'
+patchDMapWithMoveToPatchMapWithMoveWith f g (PatchDMapWithMove m) =
+  PatchMapWithMove $ dmapToMapWith h m
+  where h :: NodeInfo (Const2 k a) p a -> MapWithMove.NodeInfo k p'
+        h ni = MapWithMove.NodeInfo
           { MapWithMove._nodeInfo_from = case _nodeInfo_from ni of
               From_Insert v -> MapWithMove.From_Insert $ f v
               From_Delete -> MapWithMove.From_Delete
-              From_Move (Const2 k) -> MapWithMove.From_Move k Proxy
-          , MapWithMove._nodeInfo_to = unConst2 <$> getComposeMaybe (_nodeInfo_to ni)
+              From_Move (Const2 k :=> Flip p) -> MapWithMove.From_Move k $ g p
+          , MapWithMove._nodeInfo_to = case _nodeInfo_to ni of
+              To_NonMove -> MapWithMove.To_NonMove
+              To_Move (Const2 k :=> p) -> MapWithMove.To_Move k $ g p
           }
 
 -- | "Strengthen" a @'PatchMapWithMove' k v@ into a @'PatchDMapWithMove
@@ -597,36 +559,47 @@ patchDMapWithMoveToPatchMapWithMoveWith f (PatchDMapWithMove p) = PatchMapWithMo
 -- 'Const2'. Apply the given function to each @v@ to produce a @PatchTarget1 p'
 -- a@. Completemented by 'patchDMapWithMoveToPatchMapWithMoveWith'
 const2PatchDMapWithMoveWith
-  :: forall k v p' a
-  .  (v -> PatchTarget1 p' a)
+  :: forall k v v' a
+  .  (v -> v' a)
   -> PatchMapWithMove k (Proxy v)
-  -> PatchDMapWithMove (Const2 k a) p'
-const2PatchDMapWithMoveWith f (PatchMapWithMove p) = PatchDMapWithMove $ DMap.fromDistinctAscList $ g <$> Map.toAscList p
-  where g :: (k, MapWithMove.NodeInfo k (Proxy v)) -> DSum (Const2 k a) (NodeInfo (Const2 k a) v')
+  -> PatchDMapWithMove (Const2 k a) (Proxy3 v')
+const2PatchDMapWithMoveWith f (PatchMapWithMove p) =
+  PatchDMapWithMove $ DMap.fromDistinctAscList $ g <$> Map.toAscList p
+  where g :: (k, MapWithMove.NodeInfo k (Proxy v))
+          -> DSum (Const2 k a) (NodeInfo (Const2 k a) (Proxy3 v'))
         g (k, ni) = Const2 k :=> NodeInfo
           { _nodeInfo_from = case MapWithMove._nodeInfo_from ni of
               MapWithMove.From_Insert v -> From_Insert $ f v
               MapWithMove.From_Delete -> From_Delete
-              MapWithMove.From_Move fromKey Proxy -> From_Move $ Const2 fromKey
-          , _nodeInfo_to = ComposeMaybe $ Const2 <$> MapWithMove._nodeInfo_to ni
+              MapWithMove.From_Move fromKey Proxy -> From_Move $ Const2 fromKey :=> Flip Proxy3
+          , _nodeInfo_to = case MapWithMove._nodeInfo_to ni of
+              MapWithMove.To_NonMove -> To_NonMove
+              MapWithMove.To_Move toKey Proxy -> To_Move $ Const2 toKey :=> Proxy3
           }
 
 -- | Apply the insertions, deletions, and moves to a given 'DMap'.
-instance GCompare k => PatchHet (PatchDMapWithMove k p) where
+instance ( GCompare k
+         , PatchHet2 p
+         , PatchSource1 p ~ PatchTarget1 p
+         ) => PatchHet (PatchDMapWithMove k p) where
   type PatchSource (PatchDMapWithMove k p) = DMap k (PatchSource1 p)
   type PatchTarget (PatchDMapWithMove k p) = DMap k (PatchTarget1 p)
-instance GCompare k => Patch (PatchDMapWithMove k p) where
-  apply (PatchDMapWithMove p) old = Just $! insertions `DMap.union` (old `DMap.difference` deletions)
+
+instance ( GCompare k
+         , PatchHet2 p
+         , PatchSource1 p ~ PatchTarget1 p
+         ) => Patch (PatchDMapWithMove k p) where
+  apply (PatchDMapWithMove m) old = Just $! insertions `DMap.union` (old `DMap.difference` deletions)
     -- TODO: return Nothing sometimes --Note: the strict application here is
     -- critical to ensuring that incremental merges don't hold onto all their
     -- prerequisite events forever; can we make this more robust?
-    where insertions = DMap.mapMaybeWithKey insertFunc p
+    where insertions = DMap.mapMaybeWithKey insertFunc m
           insertFunc :: forall a. k a -> NodeInfo k p a -> Maybe (PatchTarget1 p a)
           insertFunc _ ni = case _nodeInfo_from ni of
             From_Insert v -> Just v
-            From_Move k -> DMap.lookup k old
+            From_Move (k :=> Flip p) -> applyAlwaysHet2 p <$> DMap.lookup k old
             From_Delete -> Nothing
-          deletions = DMap.mapMaybeWithKey deleteFunc p
+          deletions = DMap.mapMaybeWithKey deleteFunc m
           deleteFunc :: forall a. k a -> NodeInfo k p a -> Maybe (Constant () a)
           deleteFunc _ ni = case _nodeInfo_from ni of
             From_Delete -> Just $ Constant ()
@@ -634,6 +607,12 @@ instance GCompare k => Patch (PatchDMapWithMove k p) where
 
 -- | Get the values that will be replaced, deleted, or moved if the given patch
 -- is applied to the given 'DMap'.
-getDeletionsAndMoves :: GCompare k => PatchDMapWithMove k v -> DMap k v' -> DMap k (Product v' (ComposeMaybe k))
+getDeletionsAndMoves
+  :: ( GCompare k
+     , PatchSource1 p ~ PatchTarget1 p
+     )
+  => PatchDMapWithMove k p
+  -> DMap k (PatchSource1 p)
+  -> DMap k (Product (PatchTarget1 p) (To k p))
 getDeletionsAndMoves (PatchDMapWithMove p) m = DMap.intersectionWithKey f m p
   where f _ v ni = Pair v $ _nodeInfo_to ni

@@ -1,5 +1,7 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
@@ -8,7 +10,9 @@
 -- | The interface for types which represent changes made to other types
 module Data.Patch.Class where
 
+import qualified Data.Semigroupoid as Cat
 import Data.Functor.Identity
+import Data.Functor.Misc
 import Data.Maybe
 import Data.Semigroup (Semigroup(..))
 import Data.Proxy
@@ -128,6 +132,7 @@ applyAlwaysHet2 p t = case applyHet2 p t of
 
 -- | Connect the classes without quanitified constraints
 newtype ProjectLocal p from to = ProjectLocal { unProjectLocal :: p from to }
+  deriving newtype Cat.Semigroupoid
 
 instance PatchHet2 p => PatchHet (ProjectLocal p from to) where
   type PatchSource (ProjectLocal p from to) = PatchSource1 p from
@@ -145,24 +150,18 @@ instance ( PatchHet2Base p
          , PatchSource1 p ~ PatchTarget1 p
          ) => Patch2 p
 
-newtype Replace2 (t :: k -> *) (a :: k) (b :: k) = Replace2 (t b)
-  deriving ( Show, Read, Eq, Ord
-           , Functor, Foldable, Traversable
-           )
+-- | 'First2' can be used as a 'Patch' that always fully replaces the value
+instance PatchHet (First2 (t :: k -> *) (from :: k) (to :: k)) where
+  type PatchSource (First2 t from to) = t from
+  type PatchTarget (First2 t from to) = t to
+  applyHet (First2 val) _ = Right val
 
-data Proxy2 t a b = Proxy2
-  deriving ( Show, Read, Eq, Ord
-           , Functor, Foldable, Traversable
-           )
+-- | 'Proxy3' can be used as a 'Patch' that always does nothing
+instance PatchHet (Proxy3 (t :: k -> *) (a :: k) (a :: k)) where
+  type PatchSource (Proxy3 t a a) = t a
+  type PatchTarget (Proxy3 t a a) = t a
+  applyHet ~Proxy3 _ = Left Refl
 
--- | 'Replace2' can be used as a 'Patch' that always fully replaces the value
-instance PatchHet (Replace2 (t :: k -> *) (from :: k) (to :: k)) where
-  type PatchSource (Replace2 t from to) = t from
-  type PatchTarget (Replace2 t from to) = t to
-  applyHet (Replace2 val) _ = Right val
-
--- | 'Proxy2' can be used as a 'Patch' that always does nothing
-instance PatchHet (Proxy2 (t :: k -> *) (a :: k) (a :: k)) where
-  type PatchSource (Proxy2 t a a) = t a
-  type PatchTarget (Proxy2 t a a) = t a
-  applyHet ~Proxy2 _ = Left Refl
+instance PatchHet2Base (Proxy3 (t :: k -> *) :: k -> k -> *) where
+  type PatchSource1 (Proxy3 t) = t
+  type PatchTarget1 (Proxy3 t) = t

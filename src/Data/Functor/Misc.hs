@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -17,6 +17,8 @@
 module Data.Functor.Misc
   ( -- * Const2
     Const2 (..)
+  , Proxy3 (..)
+  , First2 (..)
   , unConst2
   , dmapToMap
   , dmapToIntMap
@@ -37,6 +39,7 @@ module Data.Functor.Misc
   , ComposeMaybe (..)
   ) where
 
+import qualified Control.Category as Cat
 import Control.Applicative ((<$>))
 import Data.Dependent.Map (DMap)
 import qualified Data.Dependent.Map as DMap
@@ -48,6 +51,7 @@ import Data.IntMap (IntMap)
 import qualified Data.IntMap as IntMap
 import Data.Map (Map)
 import qualified Data.Map as Map
+import qualified Data.Semigroupoid as Cat
 import Data.Some (Some(Some))
 import Data.These
 import Data.Type.Equality ((:~:)(Refl))
@@ -63,14 +67,14 @@ data Const2 :: * -> x -> x -> * where
   Const2 :: k -> Const2 k v v
   deriving (Typeable)
 
--- | Extract the value from a Const2
-unConst2 :: Const2 k v v' -> k
-unConst2 (Const2 k) = k
-
 deriving instance Eq k => Eq (Const2 k v v')
 deriving instance Ord k => Ord (Const2 k v v')
 deriving instance Show k => Show (Const2 k v v')
 deriving instance Read k => Read (Const2 k v v)
+
+-- | Extract the value from a Const2
+unConst2 :: Const2 k v v' -> k
+unConst2 (Const2 k) = k
 
 instance Show k => GShow (Const2 k v) where
   gshowsPrec n x@(Const2 _) = showsPrec n x
@@ -86,6 +90,25 @@ instance Ord k => GCompare (Const2 k v) where
     LT -> GLT
     EQ -> GEQ
     GT -> GGT
+
+data Proxy3 :: x -> y -> z -> * where
+  Proxy3 :: Proxy3 vx vy vz
+  deriving ( Show, Read, Eq, Ord
+           , Functor, Foldable, Traversable
+           , Typeable
+           )
+
+instance Cat.Category (Proxy3 x) where
+  id = Proxy3
+  ~Proxy3 . ~Proxy3 = Proxy3
+
+newtype First2 (t :: k -> *) (a :: k) (b :: k) = First2 (t b)
+  deriving ( Show, Read, Eq, Ord
+           , Functor, Foldable, Traversable
+           )
+
+instance Cat.Semigroupoid (First2 x) where
+  First2 x `o` ~(First2 _) = First2 x
 
 -- | Convert a 'DMap' to a regular 'Map'
 dmapToMap :: DMap (Const2 k v) Identity -> Map k v
