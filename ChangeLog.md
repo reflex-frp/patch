@@ -4,9 +4,7 @@
 
 * `PatchMapWithMove` supports moves with a patch.
 
-* Add `PatchDMapWithReset`
-
-* Add `Patchable`
+* `PatchDMapWithMove` supports moves with a patch.
 
 ## 0.0.1.0
 
