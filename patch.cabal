@@ -50,7 +50,6 @@ library
                  , Data.Patch.IntMap
                  , Data.Patch.Map
                  , Data.Patch.MapWithMove
-                 , Data.Patch.Patchable
 
   ghc-options: -Wall -fwarn-redundant-constraints -fwarn-tabs
 
