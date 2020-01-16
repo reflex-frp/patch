@@ -22,16 +22,6 @@ import Data.Patch.Class
 -- and @Nothing@ means delete.
 newtype PatchIntMap a = PatchIntMap (IntMap (Maybe a)) deriving (Functor, Foldable, Traversable, Monoid)
 
--- | Apply the insertions or deletions to a given 'IntMap'.
-instance Patch (PatchIntMap a) where
-  type PatchTarget (PatchIntMap a) = IntMap a
-  apply (PatchIntMap p) v = if IntMap.null p then Nothing else Just $
-    let removes = IntMap.filter isNothing p
-        adds = IntMap.mapMaybe id p
-    in IntMap.union adds $ v `IntMap.difference` removes
-
-makeWrapped ''PatchIntMap
-
 -- | @a <> b@ will apply the changes of @b@ and then apply the changes of @a@.
 -- If the same key is modified by both patches, the one on the left will take
 -- precedence.
@@ -39,6 +29,16 @@ instance Semigroup (PatchIntMap v) where
   PatchIntMap a <> PatchIntMap b = PatchIntMap $ a `mappend` b --TODO: Add a semigroup instance for Map
   -- PatchMap is idempotent, so stimes n is id for every n
   stimes = stimesIdempotentMonoid
+
+makeWrapped ''PatchIntMap
+
+-- | Apply the insertions or deletions to a given 'IntMap'.
+instance Patch (PatchIntMap a) where
+  type PatchTarget (PatchIntMap a) = IntMap a
+  apply (PatchIntMap p) v = if IntMap.null p then Nothing else Just $
+    let removes = IntMap.filter isNothing p
+        adds = IntMap.mapMaybe id p
+    in IntMap.union adds $ v `IntMap.difference` removes
 
 instance FunctorWithIndex Int PatchIntMap
 instance FoldableWithIndex Int PatchIntMap
