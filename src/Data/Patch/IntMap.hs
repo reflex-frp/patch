@@ -7,6 +7,7 @@
 -- insert/update or delete of associations.
 module Data.Patch.IntMap where
 
+import Control.Lens
 import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as IntMap
 import Data.Maybe
@@ -33,6 +34,11 @@ instance Semigroup (PatchIntMap v) where
   PatchIntMap a <> PatchIntMap b = PatchIntMap $ a `mappend` b --TODO: Add a semigroup instance for Map
   -- PatchMap is idempotent, so stimes n is id for every n
   stimes = stimesIdempotentMonoid
+
+instance FunctorWithIndex Int PatchIntMap
+instance FoldableWithIndex Int PatchIntMap
+instance TraversableWithIndex Int PatchIntMap where
+  itraversed = _Wrapped . itraversed . traversed
 
 -- | Map a function @Int -> a -> b@ over all @a@s in the given @'PatchIntMap' a@
 -- (that is, all inserts/updates), producing a @PatchIntMap b@.
