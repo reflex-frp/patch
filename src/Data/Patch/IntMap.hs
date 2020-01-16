@@ -1,7 +1,10 @@
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 -- | Module containing 'PatchIntMap', a 'Patch' for 'IntMap' which allows for
 -- insert/update or delete of associations.
@@ -26,6 +29,8 @@ instance Patch (PatchIntMap a) where
     let removes = IntMap.filter isNothing p
         adds = IntMap.mapMaybe id p
     in IntMap.union adds $ v `IntMap.difference` removes
+
+makeWrapped ''PatchIntMap
 
 -- | @a <> b@ will apply the changes of @b@ and then apply the changes of @a@.
 -- If the same key is modified by both patches, the one on the left will take
