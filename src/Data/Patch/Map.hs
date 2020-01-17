@@ -54,7 +54,8 @@ instance Ord k => Patch (PatchMap k v) where
 instance FunctorWithIndex k (PatchMap k)
 instance FoldableWithIndex k (PatchMap k)
 instance TraversableWithIndex k (PatchMap k) where
-  itraverse f (PatchMap x) = PatchMap <$> itraverse (traverse . f) x
+  itraverse = itraversed . Indexed
+  itraversed = _Wrapped .> itraversed <. traversed
 
 -- | The empty 'PatchMap' contains no insertions or deletions
 instance Ord k => Monoid (PatchMap k v) where

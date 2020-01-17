@@ -45,7 +45,8 @@ instance Patch (PatchIntMap a) where
 instance FunctorWithIndex Int PatchIntMap
 instance FoldableWithIndex Int PatchIntMap
 instance TraversableWithIndex Int PatchIntMap where
-  itraversed = _Wrapped . itraversed . traversed
+  itraverse = itraversed . Indexed
+  itraversed = _Wrapped .> itraversed <. traversed
 
 -- | Map a function @Int -> a -> b@ over all @a@s in the given @'PatchIntMap' a@
 -- (that is, all inserts/updates), producing a @PatchIntMap b@.
