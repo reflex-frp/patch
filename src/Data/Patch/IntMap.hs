@@ -1,11 +1,10 @@
-{-# LANGUAGE DeriveFoldable #-}
-{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
+
 -- | Module containing 'PatchIntMap', a 'Patch' for 'IntMap' which allows for
 -- insert/update or delete of associations.
 module Data.Patch.IntMap where
@@ -20,7 +19,10 @@ import Data.Patch.Class
 -- | 'Patch' for 'IntMap' which represents insertion or deletion of keys in the mapping.
 -- Internally represented by 'IntMap (Maybe a)', where @Just@ means insert/update
 -- and @Nothing@ means delete.
-newtype PatchIntMap a = PatchIntMap (IntMap (Maybe a)) deriving (Functor, Foldable, Traversable, Monoid)
+newtype PatchIntMap a = PatchIntMap { unPatchIntMap :: IntMap (Maybe a) }
+  deriving ( Show, Read, Eq, Ord
+           , Functor, Foldable, Traversable, Monoid
+           )
 
 -- | @a <> b@ will apply the changes of @b@ and then apply the changes of @a@.
 -- If the same key is modified by both patches, the one on the left will take

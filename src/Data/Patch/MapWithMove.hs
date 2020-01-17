@@ -1,11 +1,14 @@
-{-# LANGUAGE DeriveFoldable #-}
-{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+
 -- | 'Patch'es on 'Map' that can insert, delete, and move values from one key to
 -- another
 module Data.Patch.MapWithMove where
@@ -13,6 +16,7 @@ module Data.Patch.MapWithMove where
 import Data.Patch.Class
 
 import Control.Arrow
+import Control.Lens hiding (from, to)
 import Control.Monad.Trans.State
 import Data.Foldable
 import Data.Function
@@ -28,7 +32,13 @@ import Data.Tuple
 -- | Patch a Map with additions, deletions, and moves.  Invariant: If key @k1@
 -- is coming from @From_Move k2@, then key @k2@ should be going to @Just k1@,
 -- and vice versa.  There should never be any unpaired From/To keys.
-newtype PatchMapWithMove k v = PatchMapWithMove (Map k (NodeInfo k v)) deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
+newtype PatchMapWithMove k v = PatchMapWithMove
+  { -- | Extract the internal representation of the 'PatchMapWithMove'
+    unPatchMapWithMove :: Map k (NodeInfo k v)
+  }
+  deriving ( Show, Read, Eq, Ord
+           , Functor, Foldable, Traversable
+           )
 
 -- | Holds the information about each key: where its new value should come from,
 -- and where its old value should go to
@@ -53,6 +63,13 @@ data From k v
 -- that means it will be deleted.
 type To = Maybe
 
+makeWrapped ''PatchMapWithMove
+
+instance FunctorWithIndex k (PatchMapWithMove k)
+instance FoldableWithIndex k (PatchMapWithMove k)
+instance TraversableWithIndex k (PatchMapWithMove k) where
+  itraverse f (PatchMapWithMove x) = PatchMapWithMove <$> itraverse (traverse . f) x
+
 -- | Create a 'PatchMapWithMove', validating it
 patchMapWithMove :: Ord k => Map k (NodeInfo k v) -> Maybe (PatchMapWithMove k v)
 patchMapWithMove m = if valid then Just $ PatchMapWithMove m else Nothing
@@ -69,10 +86,6 @@ patchMapWithMoveInsertAll m = PatchMapWithMove $ flip fmap m $ \v -> NodeInfo
   { _nodeInfo_from = From_Insert v
   , _nodeInfo_to = Nothing
   }
-
--- | Extract the internal representation of the 'PatchMapWithMove'
-unPatchMapWithMove :: PatchMapWithMove k v -> Map k (NodeInfo k v)
-unPatchMapWithMove (PatchMapWithMove p) = p
 
 -- | Make a @'PatchMapWithMove' k v@ which has the effect of inserting or updating a value @v@ to the given key @k@, like 'Map.insert'.
 insertMapKey :: k -> v -> PatchMapWithMove k v
