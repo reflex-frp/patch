@@ -1,6 +1,6 @@
 # Revision history for patch
 
-## Unreleased
+## 0.0.2.0
 
 * Consistently provide:
 
