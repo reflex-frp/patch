@@ -1,11 +1,14 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+
 -- | 'Patch'es on 'Map' that can insert, delete, and move values from one key to
 -- another
 module Data.Patch.MapWithMove where
@@ -20,6 +23,7 @@ import Data.List
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
+--import Data.Proxy
 #if !MIN_VERSION_base(4,9,0)
 import Data.Semigroup (Semigroup (..), (<>))
 #endif
@@ -31,8 +35,12 @@ import Data.Tuple
 -- | Patch a Map with additions, deletions, and moves.  Invariant: If key @k1@
 -- is coming from @From_Move k2@, then key @k2@ should be going to @Just k1@,
 -- and vice versa.  There should never be any unpaired From/To keys.
-newtype PatchMapWithMove k p = PatchMapWithMove (Map k (NodeInfo k p))
+newtype PatchMapWithMove k p = PatchMapWithMove
+  { -- | Extract the internal representation of the 'PatchMapWithMove'
+    unPatchMapWithMove :: Map k (NodeInfo k p)
+  }
 deriving instance (Show k, Show p, Show (PatchTarget p)) => Show (PatchMapWithMove k p)
+deriving instance (Ord k, Read k, Read p, Read (PatchTarget p)) => Read (PatchMapWithMove k p)
 deriving instance (Eq k, Eq p, Eq (PatchTarget p)) => Eq (PatchMapWithMove k p)
 deriving instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (PatchMapWithMove k p)
 
@@ -85,12 +93,7 @@ patchMapWithMoveInsertAll m = PatchMapWithMove $ flip fmap m $ \v -> NodeInfo
   , _nodeInfo_to = Nothing
   }
 
--- | Extract the internal representation of the 'PatchMapWithMove'
-unPatchMapWithMove
-  :: PatchMapWithMove k p -> Map k (NodeInfo k p)
-unPatchMapWithMove (PatchMapWithMove p) = p
-
--- | Make a @'PatchMapWithMove' k p@ which has the effect of inserting or updating a value @v@ to the given key @k@, like 'Map.insert'.
+-- | Make a @'PatchMapWithMove' k p@ which has the effect of inserting or replacing a value @v@ at the given key @k@, like 'Map.insert'.
 insertMapKey
   :: k -> PatchTarget p -> PatchMapWithMove k p
 insertMapKey k v = PatchMapWithMove . Map.singleton k $ NodeInfo (From_Insert v) Nothing
@@ -120,7 +123,8 @@ moveMapKey src dst
 --      . Map.delete a . Map.delete b $ map
 -- @
 swapMapKey
-  :: (DecidablyEmpty p, Patch p) => Ord k => k -> k -> PatchMapWithMove k p
+  :: (DecidablyEmpty p, Patch p)
+  => Ord k => k -> k -> PatchMapWithMove k p
 swapMapKey src dst
   | src == dst = mempty
   | otherwise =
@@ -129,7 +133,8 @@ swapMapKey src dst
       , (src, NodeInfo (From_Move dst mempty) (Just dst))
       ]
 
--- |Make a @'PatchMapWithMove' k v@ which has the effect of deleting a key in the mapping, equivalent to 'Map.delete'.
+-- | Make a @'PatchMapWithMove' k v@ which has the effect of deleting a key in
+-- the mapping, equivalent to 'Map.delete'.
 deleteMapKey
   :: k -> PatchMapWithMove k v
 deleteMapKey k = PatchMapWithMove . Map.singleton k $ NodeInfo From_Delete Nothing
@@ -144,7 +149,11 @@ unsafePatchMapWithMove = PatchMapWithMove
 -- | Apply the insertions, deletions, and moves to a given 'Map'
 instance (Ord k, Patch p) => Patch (PatchMapWithMove k p) where
   type PatchTarget (PatchMapWithMove k p) = Map k (PatchTarget p)
-  apply (PatchMapWithMove m) old = Just $! insertions `Map.union` (old `Map.difference` deletions) --TODO: return Nothing sometimes --Note: the strict application here is critical to ensuring that incremental merges don't hold onto all their prerequisite events forever; can we make this more robust?
+  -- TODO: return Nothing sometimes
+  -- Note: the strict application here is critical to ensuring that incremental
+  -- merges don't hold onto all their prerequisite events forever; can we make
+  -- this more robust?
+  apply (PatchMapWithMove m) old = Just $! insertions `Map.union` (old `Map.difference` deletions)
     where insertions = flip Map.mapMaybeWithKey m $ \_ ni -> case _nodeInfo_from ni of
             From_Insert v -> Just v
             From_Move k p -> applyAlways p <$> Map.lookup k old
@@ -308,7 +317,8 @@ instance ( Ord k
         That b -> Just b
 
 --TODO: Figure out how to implement this in terms of PatchDMapWithMove rather than duplicating it here
--- |Compose patches having the same effect as applying the patches in turn: @'applyAlways' (p <> q) == 'applyAlways' p . 'applyAlways' q@
+-- | Compose patches having the same effect as applying the patches in turn:
+-- @'applyAlways' (p <> q) == 'applyAlways' p . 'applyAlways' q@
 instance ( Ord k
          , Monoid p
          , DecidablyEmpty p
