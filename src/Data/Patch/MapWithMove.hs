@@ -27,6 +27,7 @@ import Data.List
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
+--import Data.Proxy
 #if !MIN_VERSION_base(4,9,0)
 import Data.Semigroup (Semigroup (..), (<>))
 #endif
@@ -46,6 +47,13 @@ deriving instance (Show k, Show p, Show (PatchTarget p)) => Show (PatchMapWithMo
 deriving instance (Ord k, Read k, Read p, Read (PatchTarget p)) => Read (PatchMapWithMove k p)
 deriving instance (Eq k, Eq p, Eq (PatchTarget p)) => Eq (PatchMapWithMove k p)
 deriving instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (PatchMapWithMove k p)
+
+-- -- | Skips the patch so it's 'Functor' and friends
+-- newtype PatchMapWithMove' k v = PatchMapWithMove' { unPatchMapWithMove' :: PatchMapWithMove k (Proxy v) }
+--
+-- deriving instance Functor (PatchMapWithMove' k)
+-- deriving instance Foldable (PatchMapWithMove' k)
+-- deriving instance Traversable (PatchMapWithMove' k)
 
 -- | Holds the information about each key: where its new value should come from,
 -- and where its old value should go to
@@ -83,6 +91,13 @@ data To k p
            )
 
 makeWrapped ''PatchMapWithMove
+--makeWrapped ''PatchMapWithMove'
+
+-- instance FunctorWithIndex k (PatchMapWithMove k)
+-- instance FoldableWithIndex k (PatchMapWithMove k)
+-- instance TraversableWithIndex k (PatchMapWithMove k) where
+--   itraverse = itraversed . Indexed
+--   itraversed = _Wrapped .> itraversed <. traversed
 
 -- | Create a 'PatchMapWithMove', validating it
 patchMapWithMove
