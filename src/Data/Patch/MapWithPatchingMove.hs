@@ -271,7 +271,7 @@ instance ( Ord k
       h :: (k, (Maybe k, From k p)) -> [(k, Fixup k p)]
       h (_, (mToAfter, editBefore)) = case (mToAfter, editBefore) of
         (Just toAfter, From_Move fromBefore p)
-          | fromBefore == toAfter && isNull p
+          | fromBefore == toAfter && isEmpty p
             -> [(toAfter, Fixup_Delete)]
           | otherwise
             -> [ (toAfter, Fixup_Update (This editBefore))

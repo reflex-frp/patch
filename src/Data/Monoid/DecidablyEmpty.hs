@@ -2,4 +2,4 @@
 module Data.Monoid.DecidablyEmpty where
 
 class Monoid a => DecidablyEmpty a where
-  isNull :: a -> Bool
+  isEmpty :: a -> Bool
