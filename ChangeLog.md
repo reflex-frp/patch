@@ -6,6 +6,18 @@
 
 * `PatchDMapWithMove` supports moves with a patch.
 
+## 0.0.2.0
+
+* Consistently provide:
+
+   - `Wrapped` instances
+
+   - `*WithIndex` instances
+
+   - `un*` newtype unwrappers
+
+  for `PatchMap`, `PatchIntMap`, and `PatchMapWithMove`.
+
 ## 0.0.1.0
 
 * Support older GHCs with `split-these` flag.

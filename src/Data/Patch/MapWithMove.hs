@@ -1,11 +1,17 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+
 -- | 'Patch'es on 'Map' that can insert, delete, and move values from one key to
 -- another
 module Data.Patch.MapWithMove where
@@ -13,6 +19,7 @@ module Data.Patch.MapWithMove where
 import Data.Patch.Class
 
 import Control.Arrow
+import Control.Lens hiding (from, to)
 import Control.Monad.Trans.State
 import Data.Foldable
 import Data.Function
@@ -31,8 +38,12 @@ import Data.Tuple
 -- | Patch a Map with additions, deletions, and moves.  Invariant: If key @k1@
 -- is coming from @From_Move k2@, then key @k2@ should be going to @Just k1@,
 -- and vice versa.  There should never be any unpaired From/To keys.
-newtype PatchMapWithMove k p = PatchMapWithMove (Map k (NodeInfo k p))
+newtype PatchMapWithMove k p = PatchMapWithMove
+  { -- | Extract the internal representation of the 'PatchMapWithMove'
+    unPatchMapWithMove :: Map k (NodeInfo k p)
+  }
 deriving instance (Show k, Show p, Show (PatchTarget p)) => Show (PatchMapWithMove k p)
+deriving instance (Ord k, Read k, Read p, Read (PatchTarget p)) => Read (PatchMapWithMove k p)
 deriving instance (Eq k, Eq p, Eq (PatchTarget p)) => Eq (PatchMapWithMove k p)
 deriving instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (PatchMapWithMove k p)
 
@@ -67,11 +78,11 @@ deriving instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (From k p)
 data To k p
   = To_NonMove
   | To_Move !k !p
+  deriving ( Show, Read, Eq, Ord
+           , Functor, Foldable, Traversable
+           )
 
-deriving instance (Show k, Show p, Show (PatchTarget p)) => Show (To k p)
-deriving instance (Read k, Read p, Read (PatchTarget p)) => Read (To k p)
-deriving instance (Eq k, Eq p, Eq (PatchTarget p)) => Eq (To k p)
-deriving instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (To k p)
+makeWrapped ''PatchMapWithMove
 
 -- | Create a 'PatchMapWithMove', validating it
 patchMapWithMove
@@ -94,12 +105,7 @@ patchMapWithMoveInsertAll m = PatchMapWithMove $ flip fmap m $ \v -> NodeInfo
   , _nodeInfo_to = To_NonMove
   }
 
--- | Extract the internal representation of the 'PatchMapWithMove'
-unPatchMapWithMove
-  :: PatchMapWithMove k p -> Map k (NodeInfo k p)
-unPatchMapWithMove (PatchMapWithMove p) = p
-
--- | Make a @'PatchMapWithMove' k p@ which has the effect of inserting or updating a value @v@ to the given key @k@, like 'Map.insert'.
+-- | Make a @'PatchMapWithMove' k p@ which has the effect of inserting or replacing a value @v@ at the given key @k@, like 'Map.insert'.
 insertMapKey
   :: k -> PatchTarget p -> PatchMapWithMove k p
 insertMapKey k v = PatchMapWithMove . Map.singleton k $ NodeInfo (From_Insert v) To_NonMove
