@@ -18,16 +18,26 @@ let
       "ghcIosAarch64"
     ];
     compilerPkgs = lib.genAttrs compilers (ghc: let
-      src = builtins.filterSource (path: type: !(builtins.elem (baseNameOf path) [
-        "release.nix"
-        ".git"
-        "dist"
-        "dist-newstyle"
-        "cabal.haskell-ci"
-        "cabal.project"
-        ".travis.yml"
-      ])) ./.;
-    in reflex-platform.${ghc}.callCabal2nix "patch" src {});
+      reflex-platform = reflex-platform-fun {
+        inherit system;
+        haskellOverlays = [
+          # Use this package's source for reflex
+          (self: super: {
+            _dep = super._dep // {
+              patch = builtins.filterSource (path: type: !(builtins.elem (baseNameOf path) [
+                "release.nix"
+                ".git"
+                "dist"
+                "dist-newstyle"
+                "cabal.haskell-ci"
+                "cabal.project"
+                ".travis.yml"
+              ])) ./.;
+            };
+          })
+        ];
+      };
+    in reflex-platform.${ghc}.patch);
   in compilerPkgs // {
     cache = reflex-platform.pinBuildInputs "patch-${system}"
       (builtins.attrValues compilerPkgs);
