@@ -26,7 +26,7 @@ instance Patch (Identity a) where
   type PatchTarget (Identity a) = a
   apply (Identity a) _ = Just a
 
--- | 'Identity' can be used as a 'Patch' that always fully replaces the value
+-- | 'Proxy' can be used as a 'Patch' that does nothing.
 instance Patch (Proxy a) where
   type PatchTarget (Proxy a) = a
   apply ~Proxy _ = Nothing
