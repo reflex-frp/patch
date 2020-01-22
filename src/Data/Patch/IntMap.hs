@@ -1,7 +1,9 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -13,7 +15,10 @@ import Control.Lens
 import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as IntMap
 import Data.Maybe
-import Data.Semigroup
+import Data.Monoid.DecidablyEmpty
+#if !MIN_VERSION_base(4,10,0)
+import Data.Semigroup (Semigroup (..))
+#endif
 import Data.Patch.Class
 
 -- | 'Patch' for 'IntMap' which represents insertion or deletion of keys in the mapping.
@@ -21,16 +26,14 @@ import Data.Patch.Class
 -- and @Nothing@ means delete.
 newtype PatchIntMap a = PatchIntMap { unPatchIntMap :: IntMap (Maybe a) }
   deriving ( Show, Read, Eq, Ord
-           , Functor, Foldable, Traversable, Monoid
+           , Functor, Foldable, Traversable
+           , Monoid, DecidablyEmpty
            )
 
 -- | @a <> b@ will apply the changes of @b@ and then apply the changes of @a@.
 -- If the same key is modified by both patches, the one on the left will take
 -- precedence.
-instance Semigroup (PatchIntMap v) where
-  PatchIntMap a <> PatchIntMap b = PatchIntMap $ a `mappend` b --TODO: Add a semigroup instance for Map
-  -- PatchMap is idempotent, so stimes n is id for every n
-  stimes = stimesIdempotentMonoid
+deriving instance Semigroup (PatchIntMap v)
 
 makeWrapped ''PatchIntMap
 

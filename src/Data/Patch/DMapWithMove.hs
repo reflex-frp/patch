@@ -29,6 +29,7 @@ import Data.GADT.Compare (GEq (..))
 import Data.GADT.Show (GShow, gshow)
 import qualified Data.Map as Map
 import Data.Maybe
+import Data.Monoid.DecidablyEmpty
 import Data.Semigroup (Semigroup (..), (<>))
 import Data.Some (Some(Some))
 import Data.These
@@ -41,6 +42,10 @@ import Data.These
 --     * A key should not move to itself.
 --     * A move should always be represented with both the destination key (as a 'From_Move') and the source key (as a @'ComposeMaybe' ('Just' destination)@)
 newtype PatchDMapWithMove k v = PatchDMapWithMove (DMap k (NodeInfo k v))
+
+-- It won't let me derive for some reason
+instance GCompare k => DecidablyEmpty (PatchDMapWithMove k v) where
+  isEmpty (PatchDMapWithMove m) = DMap.null m
 
 -- |Structure which represents what changes apply to a particular key. @_nodeInfo_from@ specifies what happens to this key, and in particular what other key
 -- the current key is moving from, while @_nodeInfo_to@ specifies what key the current key is moving to if involved in a move.

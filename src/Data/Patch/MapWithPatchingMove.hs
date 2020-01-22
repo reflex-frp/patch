@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
@@ -45,6 +46,7 @@ deriving instance (Show k, Show p, Show (PatchTarget p)) => Show (PatchMapWithPa
 deriving instance (Ord k, Read k, Read p, Read (PatchTarget p)) => Read (PatchMapWithPatchingMove k p)
 deriving instance (Eq k, Eq p, Eq (PatchTarget p)) => Eq (PatchMapWithPatchingMove k p)
 deriving instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (PatchMapWithPatchingMove k p)
+deriving instance (Ord k, Monoid p, DecidablyEmpty p, Patch p) => DecidablyEmpty (PatchMapWithPatchingMove k p)
 
 -- | Holds the information about each key: where its new value should come from,
 -- and where its old value should go to

@@ -5,6 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
+
 -- | 'Patch'es on 'DMap' that consist only of insertions (or overwrites) and deletions.
 module Data.Patch.DMap where
 
@@ -18,6 +19,7 @@ import Data.Functor.Constant
 import Data.Functor.Misc
 import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
+import Data.Monoid.DecidablyEmpty
 import Data.Semigroup (Semigroup (..))
 import Data.Some (Some)
 
@@ -29,6 +31,10 @@ newtype PatchDMap k v = PatchDMap { unPatchDMap :: DMap k (ComposeMaybe v) }
 deriving instance GCompare k => Semigroup (PatchDMap k v)
 
 deriving instance GCompare k => Monoid (PatchDMap k v)
+
+-- It won't let me derive for some reason
+instance GCompare k => DecidablyEmpty (PatchDMap k v) where
+  isEmpty (PatchDMap m) = DMap.null m
 
 -- | Apply the insertions or deletions to a given 'DMap'.
 instance GCompare k => Patch (PatchDMap k v) where
