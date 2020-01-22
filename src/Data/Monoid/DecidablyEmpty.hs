@@ -48,9 +48,6 @@ instance DecidablyEmpty [a] where
   isEmpty = null
 instance Semigroup a => DecidablyEmpty (Maybe a) where
   isEmpty = isNothing
-#if MIN_VERSION_base(4,11,0)
-deriving instance DecidablyEmpty a => DecidablyEmpty (Down a)
-#endif
 deriving instance (Num a, DecidablyEmpty a) => DecidablyEmpty (Product a)
 deriving instance (DecidablyEmpty a, Num a) => DecidablyEmpty (Sum a)
 deriving instance DecidablyEmpty a => DecidablyEmpty (Dual a)
@@ -61,17 +58,19 @@ deriving instance Semigroup a => DecidablyEmpty (Option a)
 deriving instance DecidablyEmpty m => DecidablyEmpty (WrappedMonoid m)
 instance (Ord a, Bounded a) => DecidablyEmpty (Max a)
 instance (Ord a, Bounded a) => DecidablyEmpty (Min a)
-instance DecidablyEmpty (U1 p)
 instance DecidablyEmpty (Proxy s)
-#if MIN_VERSION_base(4,12,0)
-deriving instance DecidablyEmpty (f p) => DecidablyEmpty (Rec1 f p)
-#endif
 deriving instance DecidablyEmpty a => DecidablyEmpty (Const a b)
+#if MIN_VERSION_base(4,11,0)
+deriving instance DecidablyEmpty a => DecidablyEmpty (Down a)
+#endif
+#if MIN_VERSION_base(4,12,0)
+deriving instance DecidablyEmpty p => DecidablyEmpty (Par1 p)
+instance DecidablyEmpty (U1 p)
+deriving instance DecidablyEmpty (f p) => DecidablyEmpty (Rec1 f p)
+deriving instance DecidablyEmpty (f p) => DecidablyEmpty (M1 i c f p)
 deriving instance DecidablyEmpty c => DecidablyEmpty (K1 i c p)
 instance (DecidablyEmpty (f p), DecidablyEmpty (g p)) => DecidablyEmpty ((f :*: g) p) where
   isEmpty (x :*: y) = isEmpty x && isEmpty y
-#if MIN_VERSION_base(4,12,0)
-deriving instance DecidablyEmpty (f p) => DecidablyEmpty (M1 i c f p)
 deriving instance DecidablyEmpty (f (g p)) => DecidablyEmpty ((f :.: g) p)
 #endif
 
