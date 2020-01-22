@@ -6,6 +6,7 @@
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -16,6 +17,7 @@ module Data.Patch.MapWithPatchingMove where
 import Data.Patch.Class
 
 import Control.Arrow
+import Control.Lens.TH (makeWrapped)
 import Control.Monad.Trans.State
 import Data.Foldable
 import Data.Function
@@ -23,7 +25,6 @@ import Data.List
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
---import Data.Proxy
 #if !MIN_VERSION_base(4,10,0)
 import Data.Semigroup (Semigroup (..))
 #endif
@@ -39,6 +40,7 @@ newtype PatchMapWithPatchingMove k p = PatchMapWithPatchingMove
   { -- | Extract the internal representation of the 'PatchMapWithPatchingMove'
     unPatchMapWithPatchingMove :: Map k (NodeInfo k p)
   }
+
 deriving instance (Show k, Show p, Show (PatchTarget p)) => Show (PatchMapWithPatchingMove k p)
 deriving instance (Ord k, Read k, Read p, Read (PatchTarget p)) => Read (PatchMapWithPatchingMove k p)
 deriving instance (Eq k, Eq p, Eq (PatchTarget p)) => Eq (PatchMapWithPatchingMove k p)
@@ -58,11 +60,32 @@ deriving instance (Read k, Read p, Read (PatchTarget p)) => Read (NodeInfo k p)
 deriving instance (Eq k, Eq p, Eq (PatchTarget p)) => Eq (NodeInfo k p)
 deriving instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (NodeInfo k p)
 
+bitraverseNodeInfo
+  :: Applicative f
+  => (k0 -> f k1)
+  -> (p0 -> f p1)
+  -> (PatchTarget p0 -> f (PatchTarget p1))
+  -> NodeInfo k0 p0 -> f (NodeInfo k1 p1)
+bitraverseNodeInfo fk fp fpt (NodeInfo from to) = NodeInfo
+  <$> bitraverseFrom fk fp fpt from
+  <*> traverse fk to
+
 -- | Describe how a key's new value should be produced
 data From k p
    = From_Insert (PatchTarget p) -- ^ Insert the given value here
    | From_Delete -- ^ Delete the existing value, if any, from here
    | From_Move !k !p -- ^ Move the value here from the given key, and apply the given patch
+
+bitraverseFrom
+  :: Applicative f
+  => (k0 -> f k1)
+  -> (p0 -> f p1)
+  -> (PatchTarget p0 -> f (PatchTarget p1))
+  -> From k0 p0 -> f (From k1 p1)
+bitraverseFrom fk fp fpt = \case
+  From_Insert pt -> From_Insert <$> fpt pt
+  From_Delete -> pure From_Delete
+  From_Move k p -> From_Move <$> fk k <*> fp p
 
 deriving instance (Show k, Show p, Show (PatchTarget p)) => Show (From k p)
 deriving instance (Read k, Read p, Read (PatchTarget p)) => Read (From k p)
@@ -326,3 +349,5 @@ instance ( Ord k
          ) => Monoid (PatchMapWithPatchingMove k p) where
   mempty = PatchMapWithPatchingMove mempty
   mappend = (<>)
+
+makeWrapped ''PatchMapWithPatchingMove
