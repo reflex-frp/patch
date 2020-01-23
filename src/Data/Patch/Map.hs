@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -18,7 +19,7 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.Monoid.DecidablyEmpty
-import Data.Semigroup
+import Data.Semigroup (Semigroup (..), stimesIdempotentMonoid)
 
 -- | A set of changes to a 'Map'.  Any element may be inserted/updated or
 -- deleted.  Insertions are represented as values wrapped in 'Just', while

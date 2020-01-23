@@ -30,7 +30,9 @@ import Data.GADT.Show (GShow, gshow)
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.Monoid.DecidablyEmpty
-import Data.Semigroup (Semigroup (..), (<>))
+#if !MIN_VERSION_base(4,11,0)
+import Data.Semigroup (Semigroup (..))
+#endif
 import Data.Some (Some(Some))
 import Data.These
 

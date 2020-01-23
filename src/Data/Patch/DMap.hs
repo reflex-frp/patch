@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PolyKinds #-}
@@ -20,7 +21,9 @@ import Data.Functor.Misc
 import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
 import Data.Monoid.DecidablyEmpty
+#if !MIN_VERSION_base(4,11,0)
 import Data.Semigroup (Semigroup (..))
+#endif
 import Data.Some (Some)
 
 -- | A set of changes to a 'DMap'.  Any element may be inserted/updated or deleted.
