@@ -287,7 +287,7 @@ data Fixup k v
 -- | Compose patches having the same effect as applying the patches in turn:
 -- @'applyAlways' (p <> q) == 'applyAlways' p . 'applyAlways' q@
 instance ( Ord k
-#if !MIN_VERSION_base(4,10,0)
+#if !MIN_VERSION_base(4,11,0)
          , Semigroup p
 #endif
          , Monoid p
@@ -349,6 +349,9 @@ instance ( Ord k
 -- | Compose patches having the same effect as applying the patches in turn:
 -- @'applyAlways' (p <> q) == 'applyAlways' p . 'applyAlways' q@
 instance ( Ord k
+#if !MIN_VERSION_base(4,11,0)
+         , Semigroup p
+#endif
          , Monoid p
          , DecidablyEmpty p
          , Patch p
