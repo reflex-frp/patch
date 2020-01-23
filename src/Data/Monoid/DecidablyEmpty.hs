@@ -11,10 +11,14 @@ import Data.Functor.Identity
 import Data.Functor.Const
 import Data.Monoid
 import Data.Maybe (isNothing)
+#if MIN_VERSION_base(4,11,0)
 import Data.Ord
+#endif
 import Data.Proxy
 import Data.Semigroup hiding (First, Last)
+#if MIN_VERSION_base(4,12,0)
 import GHC.Generics
+#endif
 
 import qualified Data.IntSet as IntSet
 import qualified Data.IntMap as IntMap
