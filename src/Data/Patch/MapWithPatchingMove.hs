@@ -46,7 +46,14 @@ deriving instance (Show k, Show p, Show (PatchTarget p)) => Show (PatchMapWithPa
 deriving instance (Ord k, Read k, Read p, Read (PatchTarget p)) => Read (PatchMapWithPatchingMove k p)
 deriving instance (Eq k, Eq p, Eq (PatchTarget p)) => Eq (PatchMapWithPatchingMove k p)
 deriving instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (PatchMapWithPatchingMove k p)
-deriving instance (Ord k, Monoid p, DecidablyEmpty p, Patch p) => DecidablyEmpty (PatchMapWithPatchingMove k p)
+
+deriving instance ( Ord k
+#if !MIN_VERSION_base(4,11,0)
+                  , Semigroup p
+#endif
+                  , DecidablyEmpty p
+                  , Patch p
+                  ) => DecidablyEmpty (PatchMapWithPatchingMove k p)
 
 -- | Holds the information about each key: where its new value should come from,
 -- and where its old value should go to
@@ -129,7 +136,13 @@ insertMapKey k v = PatchMapWithPatchingMove . Map.singleton k $ NodeInfo (From_I
 --     'Map.delete' src (maybe map ('Map.insert' dst) (Map.lookup src map))
 -- @
 moveMapKey
-  :: (DecidablyEmpty p, Patch p) => Ord k => k -> k -> PatchMapWithPatchingMove k p
+  :: ( DecidablyEmpty p
+#if !MIN_VERSION_base(4,11,0)
+     , Semigroup p
+#endif
+     , Patch p
+     )
+  => Ord k => k -> k -> PatchMapWithPatchingMove k p
 moveMapKey src dst
   | src == dst = mempty
   | otherwise =
@@ -148,7 +161,12 @@ moveMapKey src dst
 --      . Map.delete a . Map.delete b $ map
 -- @
 swapMapKey
-  :: (DecidablyEmpty p, Patch p)
+  :: ( DecidablyEmpty p
+#if !MIN_VERSION_base(4,11,0)
+     , Semigroup p
+#endif
+     , Patch p
+     )
   => Ord k => k -> k -> PatchMapWithPatchingMove k p
 swapMapKey src dst
   | src == dst = mempty
@@ -290,7 +308,6 @@ instance ( Ord k
 #if !MIN_VERSION_base(4,11,0)
          , Semigroup p
 #endif
-         , Monoid p
          , DecidablyEmpty p
          , Patch p
          ) => Semigroup (PatchMapWithPatchingMove k p) where
@@ -352,7 +369,6 @@ instance ( Ord k
 #if !MIN_VERSION_base(4,11,0)
          , Semigroup p
 #endif
-         , Monoid p
          , DecidablyEmpty p
          , Patch p
          ) => Monoid (PatchMapWithPatchingMove k p) where
