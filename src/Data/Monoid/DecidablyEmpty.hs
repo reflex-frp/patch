@@ -46,7 +46,13 @@ instance DecidablyEmpty All
 -- instance DecidablyEmpty Event
 instance DecidablyEmpty [a] where
   isEmpty = null
-instance Semigroup a => DecidablyEmpty (Maybe a) where
+instance
+#if MIN_VERSION_base(4,10,0)
+  Semigroup a
+#else
+  Monoid a
+#endif
+  => DecidablyEmpty (Maybe a) where
   isEmpty = isNothing
 deriving instance (Num a, DecidablyEmpty a) => DecidablyEmpty (Product a)
 deriving instance (DecidablyEmpty a, Num a) => DecidablyEmpty (Sum a)
