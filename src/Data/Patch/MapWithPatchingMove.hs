@@ -279,13 +279,17 @@ nodeInfoSetTo
   :: To k -> NodeInfo k v -> NodeInfo k v
 nodeInfoSetTo to ni = ni { _nodeInfo_to = to }
 
--- |Helper data structure used for composing patches using the monoid instance.
+-- | Helper data structure used for composing patches using the monoid instance.
 data Fixup k v
    = Fixup_Delete
    | Fixup_Update (These (From k v) (To k))
 
--- |Compose patches having the same effect as applying the patches in turn: @'applyAlways' (p <> q) == 'applyAlways' p . 'applyAlways' q@
+-- | Compose patches having the same effect as applying the patches in turn:
+-- @'applyAlways' (p <> q) == 'applyAlways' p . 'applyAlways' q@
 instance ( Ord k
+#if !MIN_VERSION_base(4,10,0)
+         , Semigroup p
+#endif
          , Monoid p
          , DecidablyEmpty p
          , Patch p
