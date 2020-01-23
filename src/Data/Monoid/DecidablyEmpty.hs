@@ -62,7 +62,8 @@ instance DecidablyEmpty (First a) where
 instance DecidablyEmpty (Last a) where
   isEmpty (Last a) = isNothing a
 deriving instance DecidablyEmpty a => DecidablyEmpty (Identity a)
-deriving instance Semigroup a => DecidablyEmpty (Option a)
+instance Semigroup a => DecidablyEmpty (Option a) where
+  isEmpty (Option a) = isNothing a
 deriving instance DecidablyEmpty m => DecidablyEmpty (WrappedMonoid m)
 instance (Ord a, Bounded a) => DecidablyEmpty (Max a)
 instance (Ord a, Bounded a) => DecidablyEmpty (Min a)
