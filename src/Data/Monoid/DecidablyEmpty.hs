@@ -47,7 +47,7 @@ instance DecidablyEmpty All
 instance DecidablyEmpty [a] where
   isEmpty = null
 instance
-#if MIN_VERSION_base(4,10,0)
+#if MIN_VERSION_base(4,11,0)
   Semigroup a
 #else
   Monoid a
@@ -57,8 +57,10 @@ instance
 deriving instance (Num a, DecidablyEmpty a) => DecidablyEmpty (Product a)
 deriving instance (DecidablyEmpty a, Num a) => DecidablyEmpty (Sum a)
 deriving instance DecidablyEmpty a => DecidablyEmpty (Dual a)
-deriving instance Semigroup a => DecidablyEmpty (First a)
-deriving instance Semigroup a => DecidablyEmpty (Last a)
+instance DecidablyEmpty (First a) where
+  isEmpty (First a) = isNothing a
+instance DecidablyEmpty (Last a) where
+  isEmpty (Last a) = isNothing a
 deriving instance DecidablyEmpty a => DecidablyEmpty (Identity a)
 deriving instance Semigroup a => DecidablyEmpty (Option a)
 deriving instance DecidablyEmpty m => DecidablyEmpty (WrappedMonoid m)
