@@ -100,7 +100,7 @@ type To k = PM.To k
 
 traverseNodeInfo
   :: Traversal (NodeInfo k a) (NodeInfo k b) a b
-traverseNodeInfo = PM.bitraverseNodeInfo pure (\(~Proxy) -> pure Proxy)
+traverseNodeInfo = PM.bitraverseNodeInfo pure (\ ~Proxy -> pure Proxy)
 
 -- | Create a 'PatchMapWithMove', validating it
 patchMapWithMove :: Ord k => Map k (NodeInfo k v) -> Maybe (PatchMapWithMove k v)
@@ -147,7 +147,7 @@ unsafePatchMapWithMove = PatchMapWithMove' . PM.unsafePatchMapWithPatchingMove
 -- | Apply the insertions, deletions, and moves to a given 'Map'
 instance Ord k => Patch (PatchMapWithMove k v) where
   type PatchTarget (PatchMapWithMove k v) = Map k v
-  apply (PatchMapWithMove' p) old = apply p old
+  apply (PatchMapWithMove' p) = apply p
 
 -- | Returns all the new elements that will be added to the 'Map'.
 patchMapWithMoveNewElements :: PatchMapWithMove k v -> [v]
