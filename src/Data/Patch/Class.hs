@@ -1,10 +1,14 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE TypeFamilies #-}
 -- | The interface for types which represent changes made to other types
 module Data.Patch.Class where
 
 import Data.Functor.Identity
 import Data.Maybe
+#if !MIN_VERSION_base(4,11,0)
 import Data.Semigroup (Semigroup(..))
+#endif
+import Data.Proxy
 
 -- | A 'Patch' type represents a kind of change made to a datastructure.
 --
@@ -24,6 +28,11 @@ applyAlways p t = fromMaybe t $ apply p t
 instance Patch (Identity a) where
   type PatchTarget (Identity a) = a
   apply (Identity a) _ = Just a
+
+-- | 'Proxy' can be used as a 'Patch' that does nothing.
+instance Patch (Proxy a) where
+  type PatchTarget (Proxy a) = a
+  apply ~Proxy _ = Nothing
 
 -- | Like '(.)', but composes functions that return patches rather than
 -- functions that return new values.  The Semigroup instance for patches must

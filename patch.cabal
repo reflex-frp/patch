@@ -41,6 +41,7 @@ library
                , witherable >= 0.3 && < 0.3.2
 
   exposed-modules: Data.Functor.Misc
+                 , Data.Monoid.DecidablyEmpty
                  , Data.Patch
                  , Data.Patch.Class
                  , Data.Patch.DMap
@@ -48,6 +49,7 @@ library
                  , Data.Patch.IntMap
                  , Data.Patch.Map
                  , Data.Patch.MapWithMove
+                 , Data.Patch.MapWithPatchingMove
 
   ghc-options: -Wall -fwarn-redundant-constraints -fwarn-tabs
 
