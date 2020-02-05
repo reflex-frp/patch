@@ -1,8 +1,10 @@
 # Revision history for patch
 
-## Unreleased
+## 0.0.3.0
 
 * Create `PatchMapWithPatchingMove` variant which supports moves with a patch.
+
+* Create `DecidablyEmpty` subclass of `Monoid`.
 
 ## 0.0.2.0
 

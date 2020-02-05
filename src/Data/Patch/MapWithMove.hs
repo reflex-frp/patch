@@ -34,7 +34,7 @@ import Data.List
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Proxy
-#if !MIN_VERSION_base(4,10,0)
+#if !MIN_VERSION_base(4,11,0)
 import Data.Semigroup (Semigroup (..))
 #endif
 import Data.Traversable (foldMapDefault)

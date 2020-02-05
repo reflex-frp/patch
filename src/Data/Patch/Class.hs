@@ -1,10 +1,13 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE TypeFamilies #-}
 -- | The interface for types which represent changes made to other types
 module Data.Patch.Class where
 
 import Data.Functor.Identity
 import Data.Maybe
+#if !MIN_VERSION_base(4,11,0)
 import Data.Semigroup (Semigroup(..))
+#endif
 import Data.Proxy
 
 -- | A 'Patch' type represents a kind of change made to a datastructure.
