@@ -268,7 +268,9 @@ patchThatChangesMap oldByIndex newByIndex = patch
                       putRemainingKeys $ Set.delete k fromKs
                       return $ NodeInfo (From_Move k mempty) $ Just undefined -- There's an existing value, and it's here, so no patch necessary
                     else do
-                      (fromK, remainingKeys) <- return . fromMaybe (error "patchThatChangesMap: impossible: fromKs was empty") $ Set.minView fromKs -- There's an existing value, but it's not here; move it here
+                      (fromK, remainingKeys) <- return $
+                        fromMaybe (error "PatchMapWithPatchingMove.patchThatChangesMap: impossible: fromKs was empty") $
+                        Set.minView fromKs -- There's an existing value, but it's not here; move it here
                       putRemainingKeys remainingKeys
                       return $ NodeInfo (From_Move fromK mempty) $ Just undefined
           Map.traverseWithKey f newByIndex
