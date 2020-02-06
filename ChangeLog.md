@@ -1,5 +1,9 @@
 # Revision history for patch
 
+## 0.0.3.1
+
+* Replace `fromJust` with something easier to debug.
+
 ## 0.0.3.0
 
 * Create `PatchMapWithPatchingMove` variant which supports moves with a patch.
