@@ -1,10 +1,14 @@
 # Revision history for patch
 
-## 0.1.0.0
+## Unreleased
 
 * Rewrite `PatchMapWithMove` in terms of `PatchMapWithPatchingMove`.
   Care is taken to make this as little of a breaking change as possible.
   In particular, `PatchMapWithMove` is a newtype of `PatchMapWithPatchingMove` as is the `NodeInfo` of `PatchMapWithPatchingMove`'s `NodeInfo`.
+
+## 0.0.3.1
+
+* Replace `fromJust` with something easier to debug.
 
 ## 0.0.3.0
 
