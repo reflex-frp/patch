@@ -14,7 +14,9 @@ import Data.Patch.Class
 import Data.Patch.IntMap
 import Data.Patch.Map
 
-import Data.Dependent.Map (DMap, DSum (..), GCompare (..))
+import Data.Dependent.Map (DMap)
+import Data.Dependent.Sum (DSum (..))
+import Data.GADT.Compare (GCompare (..))
 import qualified Data.Dependent.Map as DMap
 import Data.Functor.Constant
 import Data.Functor.Misc

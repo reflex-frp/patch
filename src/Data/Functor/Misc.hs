@@ -48,7 +48,7 @@ import Data.IntMap (IntMap)
 import qualified Data.IntMap as IntMap
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Data.Some (Some(Some))
+import Data.Some (Some, mkSome)
 import Data.These
 import Data.Type.Equality ((:~:)(Refl))
 import Data.Typeable hiding (Refl)
@@ -117,7 +117,7 @@ intMapWithFunctorToDMap = DMap.fromDistinctAscList . map (\(k, v) -> Const2 k :=
 -- | Convert a 'DMap' to a regular 'Map' by forgetting the types associated with
 -- the keys, using a function to remove the wrapping 'Functor'
 weakenDMapWith :: (forall a. v a -> v') -> DMap k v -> Map (Some k) v'
-weakenDMapWith f = Map.fromDistinctAscList . map (\(k :=> v) -> (Some k, f v)) . DMap.toAscList
+weakenDMapWith f = Map.fromDistinctAscList . map (\(k :=> v) -> (mkSome k, f v)) . DMap.toAscList
 
 --------------------------------------------------------------------------------
 -- WrapArg
