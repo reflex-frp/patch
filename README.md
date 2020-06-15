@@ -1,8 +1,8 @@
 ## Patch
 
-Infrastructure for writing patches which act on other types.
+Data structures for describing changes to other data structures.
 
-A `Patch` type represents a kind of change made to a datastructure.
+A `Patch` type represents a kind of change made to a data structure.
 
 ```haskell
 class Patch p where

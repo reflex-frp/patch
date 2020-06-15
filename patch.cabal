@@ -1,7 +1,9 @@
 Name: patch
 Version: 0.0.3.1
-Synopsis: Infrastructure for writing patches which act on other types.
+Synopsis: Data structures for describing changes to other data structures.
 Description:
+  Data structures for describing changes to other data structures.
+  .
   In this library, a patch is something which can be applied, analogous to a
   function, and which distinguishes returning the argument it was provided from
   returning something else.
@@ -20,7 +22,7 @@ extra-source-files:
   ChangeLog.md
 
 tested-with:
-  GHC  ==8.0.2 || ==8.2.2 || ==8.4.4 || ==8.6.5 || ==8.8.1
+  GHC ==8.0.2 || ==8.2.2 || ==8.4.4 || ==8.6.5 || ==8.8.1
   GHCJS ==8.4
 
 flag split-these
