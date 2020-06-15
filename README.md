@@ -1,4 +1,4 @@
-# `patch`
+# patch
 
 [![Haskell](https://img.shields.io/badge/language-Haskell-orange.svg)](https://haskell.org) [![Hackage](https://img.shields.io/hackage/v/patch.svg)](https://hackage.haskell.org/package/patch) [![Hackage CI](https://matrix.hackage.haskell.org/api/v2/packages/patch/badge)](https://matrix.hackage.haskell.org/#/package/patch) [![Travis CI](https://api.travis-ci.org/reflex-frp/patch.svg?branch=develop)](https://travis-ci.org/reflex-frp/patch) [![BSD3 License](https://img.shields.io/badge/license-BSD3-blue.svg)](https://github.com/reflex-frp/patch/LICENSE)
 
