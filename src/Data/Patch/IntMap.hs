@@ -59,7 +59,7 @@ mapIntMapPatchWithKey f (PatchIntMap m) = PatchIntMap $ IntMap.mapWithKey (\ k m
 -- | Map an effectful function @Int -> a -> f b@ over all @a@s in the given @'PatchIntMap' a@
 -- (that is, all inserts/updates), producing a @f (PatchIntMap b)@.
 traverseIntMapPatchWithKey :: Applicative f => (Int -> a -> f b) -> PatchIntMap a -> f (PatchIntMap b)
-traverseIntMapPatchWithKey f (PatchIntMap m) = PatchIntMap <$> IntMap.traverseWithKey (\k mv -> traverse (f k) mv) m
+traverseIntMapPatchWithKey f (PatchIntMap m) = PatchIntMap <$> IntMap.traverseWithKey (traverse . f) m
 
 -- | Extract all @a@s inserted/updated by the given @'PatchIntMap' a@.
 patchIntMapNewElements :: PatchIntMap a -> [a]
