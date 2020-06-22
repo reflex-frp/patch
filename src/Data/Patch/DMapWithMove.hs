@@ -20,12 +20,13 @@ import Data.Patch.MapWithMove (PatchMapWithMove (..))
 import qualified Data.Patch.MapWithMove as MapWithMove
 
 import Data.Constraint.Extras
-import Data.Dependent.Map (DMap, DSum (..), GCompare (..))
+import Data.Dependent.Map (DMap)
+import Data.Dependent.Sum (DSum (..))
 import qualified Data.Dependent.Map as DMap
 import Data.Functor.Constant
 import Data.Functor.Misc
 import Data.Functor.Product
-import Data.GADT.Compare (GEq (..))
+import Data.GADT.Compare (GEq (..), GCompare (..))
 import Data.GADT.Show (GShow, gshow)
 import qualified Data.Map as Map
 import Data.Maybe
@@ -33,7 +34,7 @@ import Data.Monoid.DecidablyEmpty
 #if !MIN_VERSION_base(4,11,0)
 import Data.Semigroup (Semigroup (..))
 #endif
-import Data.Some (Some(Some))
+import Data.Some (Some, mkSome)
 import Data.These
 
 -- | Like 'PatchMapWithMove', but for 'DMap'. Each key carries a 'NodeInfo' which describes how it will be changed by the patch and connects move sources and
@@ -317,8 +318,8 @@ weakenPatchDMapWithMoveWith f (PatchDMapWithMove p) = PatchMapWithMove $ weakenD
           { MapWithMove._nodeInfo_from = case _nodeInfo_from ni of
               From_Insert v -> MapWithMove.From_Insert $ f v
               From_Delete -> MapWithMove.From_Delete
-              From_Move k -> MapWithMove.From_Move $ Some k
-          , MapWithMove._nodeInfo_to = Some <$> getComposeMaybe (_nodeInfo_to ni)
+              From_Move k -> MapWithMove.From_Move $ mkSome k
+          , MapWithMove._nodeInfo_to = mkSome <$> getComposeMaybe (_nodeInfo_to ni)
           }
 
 -- |"Weaken" a @'PatchDMapWithMove' (Const2 k a) v@ to a @'PatchMapWithMove' k v'@. Weaken is in scare quotes because the 'Const2' has already disabled any
