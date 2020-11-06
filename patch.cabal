@@ -14,7 +14,7 @@ Maintainer: maintainer@obsidian.systems
 Stability: Experimental
 Category: FRP
 Build-type: Simple
-Cabal-version: >=1.9.2
+Cabal-version: >=1.10
 homepage: https://obsidian.systems
 bug-reports: https://github.com/reflex-frp/patch/issues
 extra-source-files:
