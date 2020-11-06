@@ -1,5 +1,9 @@
 # Revision history for patch
 
+## 0.0.3.2
+
+* Update version bounds
+
 ## 0.0.3.1
 
 * Replace `fromJust` with something easier to debug.
