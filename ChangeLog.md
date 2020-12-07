@@ -1,5 +1,20 @@
 # Revision history for patch
 
+## Unreleased
+
+* Remove the `split-these` flag.
+  We do not need it as we only use the `These` datatype which is provided in all versions.
+
+* Stop defining `Group`; `Group` from the `groups` package can be used instead.
+
+  Most of the instances are provided by `groups`, except the `Group
+  MonoidalMap` instance, which is not lawful.  `reflex` might provide it as an
+  orphan for backwards compat, temporarily, but it should eventually be removed
+  everywhere.
+
+* `Applicative` is still defined, because the `Abelian` from `groups` has too
+  stringent a constraint.
+
 ## 0.0.3.2
 
 * Update version bounds
