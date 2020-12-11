@@ -15,6 +15,9 @@
 * `Applicative` is still defined, because the `Abelian` from `groups` has too
   stringent a constraint.
 
+* `Additive` now lives in `Data.Semigroup.Additive`, but is still reexported
+  from `Data.Patch` for compatability.
+
 ## 0.0.3.2
 
 * Update version bounds
