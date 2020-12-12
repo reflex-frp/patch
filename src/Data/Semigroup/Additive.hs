@@ -14,6 +14,10 @@ module Data.Semigroup.Additive
 import Data.Functor.Const (Const (..))
 import Data.Functor.Identity
 import Data.Proxy
+#if !MIN_VERSION_base(4,12,0)
+-- for :*: and :.: semigroup instances
+import Data.Orphans ()
+#endif
 #if !MIN_VERSION_base(4,11,0)
 import Data.Semigroup (Semigroup (..))
 #endif
