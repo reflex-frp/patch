@@ -17,9 +17,9 @@ module Data.Patch.MapWithPatchingMove where
 
 import Data.Patch.Class
 
+import Control.Lens hiding (from, to)
 import Control.Lens.TH (makeWrapped)
 import Data.Function
-import Data.Functor
 import Data.List
 import Data.Map (Map)
 import qualified Data.Map as Map
