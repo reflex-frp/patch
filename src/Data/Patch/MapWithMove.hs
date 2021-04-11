@@ -17,10 +17,10 @@ module Data.Patch.MapWithMove where
 import Data.Patch.Class
 
 import Control.Lens hiding (from, to)
-import Data.Align
+import Data.Align (align)
 import Data.Foldable
 import Data.Function
-import Data.List (sortBy)
+import Data.List
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
