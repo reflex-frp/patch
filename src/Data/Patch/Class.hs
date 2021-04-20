@@ -30,7 +30,7 @@ instance Patch (Identity a) where
   apply (Identity a) _ = Just a
 
 -- | 'Proxy' can be used as a 'Patch' that does nothing.
-instance Patch (Proxy a) where
+instance Patch (Proxy (a :: *)) where
   type PatchTarget (Proxy a) = a
   apply ~Proxy _ = Nothing
 

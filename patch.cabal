@@ -28,7 +28,7 @@ tested-with:
 library
   hs-source-dirs: src
   default-language: Haskell2010
-  build-depends: base >= 4.9 && < 4.14
+  build-depends: base >= 4.9 && < 4.15
                , constraints-extras >= 0.3 && < 0.4
                , containers >= 0.6 && < 0.7
                , dependent-map >= 0.3 && < 0.5
@@ -55,6 +55,7 @@ library
                  , Data.Semigroup.Additive
 
   ghc-options: -Wall -fwarn-redundant-constraints -fwarn-tabs
+  default-extensions: PolyKinds
 
 test-suite hlint
   default-language: Haskell2010
@@ -65,7 +66,7 @@ test-suite hlint
                , directory
                , filepath
                , filemanip
-               , hlint (< 2.1 || >= 2.2.2) && < 3
+               , hlint (< 2.1 || >= 2.2.2) && < 3.3
   if impl(ghcjs)
     buildable: False
 
