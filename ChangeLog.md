@@ -1,5 +1,9 @@
 # Revision history for patch
 
+## 0.0.4.0
+
+* Enable PolyKinds
+
 ## 0.0.3.2
 
 * Update version bounds

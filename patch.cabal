@@ -1,5 +1,5 @@
 Name: patch
-Version: 0.0.3.2
+Version: 0.0.4.0
 Synopsis: Data structures for describing changes to other data structures.
 Description:
   Data structures for describing changes to other data structures.
@@ -55,6 +55,7 @@ library
                  , Data.Patch.MapWithPatchingMove
 
   ghc-options: -Wall -fwarn-redundant-constraints -fwarn-tabs
+  default-extensions: PolyKinds
 
   if flag(split-these)
     build-depends: these >= 1 && <1.2
