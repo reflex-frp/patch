@@ -68,7 +68,7 @@ import Data.Patch.Class
 import Data.Patch.MapWithPatchingMove (PatchMapWithPatchingMove(..), To)
 import qualified Data.Patch.MapWithPatchingMove as PM -- already a transparent synonym
 
-import Control.Lens hiding (from, to)
+import Control.Lens
 import Data.List
 import Data.Map (Map)
 import qualified Data.Map as Map
