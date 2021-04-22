@@ -84,9 +84,13 @@ newtype PatchMapWithMove k (v :: Type) = PatchMapWithMove'
     unPatchMapWithMove' :: PatchMapWithPatchingMove k (Proxy v)
   }
   deriving ( Show, Read, Eq, Ord
-           , -- | Compose patches having the same effect as applying the
+-- Haddock cannot handle documentation here before GHC 8.6
+           ,
+#if __GLASGOW_HASKELL__ >= 806
+             -- | Compose patches having the same effect as applying the
              -- patches in turn: @'applyAlways' (p <> q) == 'applyAlways' p .
              -- 'applyAlways' q@
+#endif
              Semigroup
            , Monoid
            )
