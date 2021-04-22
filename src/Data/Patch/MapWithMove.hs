@@ -8,6 +8,7 @@
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -16,30 +17,59 @@
 -- | 'Patch'es on 'Map' that can insert, delete, and move values from one key to
 -- another
 module Data.Patch.MapWithMove
-  ( module Data.Patch.MapWithMove
-  , PatchMapWithMove
+  ( PatchMapWithMove
     ( PatchMapWithMove
     , -- | Extract the representation of the 'PatchMapWithMove' as a map of
       -- 'NodeInfo'.
       unPatchMapWithMove
     , ..
     )
+  , patchMapWithMove
+  , patchMapWithMoveInsertAll
+  , insertMapKey
+  , moveMapKey
+  , swapMapKey
+  , deleteMapKey
+  , unsafePatchMapWithMove
+  , patchMapWithMoveNewElements
+  , patchMapWithMoveNewElementsMap
+  , patchThatSortsMapWith
+  , patchThatChangesAndSortsMapWith
+  , patchThatChangesMap
+
+  -- * Node Info
   , NodeInfo
     ( NodeInfo
     , _nodeInfo_to
     , _nodeInfo_from
     , ..
     )
-  -- TODO export these under the type consructor once GHC is fixed
-  -- , From (From_Insert, From_Delete, From_Move)
+  , bitraverseNodeInfo
+  , nodeInfoMapFrom
+  , nodeInfoMapMFrom
+  , nodeInfoSetTo
+
+  -- * From
+  , From
+    ( From_Insert
+    , From_Delete
+    , From_Move
+    , ..
+    )
+  , bitraverseFrom
+
+  -- * To
+  , To
   ) where
 
 import Data.Coerce
+import Data.Kind (Type)
 import Data.Patch.Class
 import Data.Patch.MapWithPatchingMove
   ( PatchMapWithPatchingMove (..)
   )
 import qualified Data.Patch.MapWithPatchingMove as PM
+import Data.Patch.MapWithPatchingMove (To) -- already a transparent synonym
 
 import Control.Lens hiding (from, to)
 import Data.List
@@ -54,7 +84,7 @@ import Data.Traversable (foldMapDefault)
 -- | Patch a Map with additions, deletions, and moves.  Invariant: If key @k1@
 -- is coming from @From_Move k2@, then key @k2@ should be going to @Just k1@,
 -- and vice versa.  There should never be any unpaired From/To keys.
-newtype PatchMapWithMove k v = PatchMapWithMove'
+newtype PatchMapWithMove k (v :: Type) = PatchMapWithMove'
   { -- | Extract the underlying 'PatchMapWithPatchingMove k (Proxy v)'
     unPatchMapWithMove' :: PatchMapWithPatchingMove k (Proxy v)
   }
@@ -66,10 +96,14 @@ newtype PatchMapWithMove k v = PatchMapWithMove'
            , Monoid
            )
 
+pattern Coerce :: Coercible a b => a -> b
+pattern Coerce x <- (coerce -> x)
+  where Coerce x = coerce x
+
 {-# COMPLETE PatchMapWithMove #-}
 pattern PatchMapWithMove :: Map k (NodeInfo k v) -> PatchMapWithMove k v
-pattern PatchMapWithMove { unPatchMapWithMove } <- PatchMapWithMove' (PatchMapWithPatchingMove (coerce -> unPatchMapWithMove))
-  where PatchMapWithMove m = PatchMapWithMove' $ PatchMapWithPatchingMove $ coerce m
+unPatchMapWithMove :: PatchMapWithMove k v -> Map k (NodeInfo k v)
+pattern PatchMapWithMove { unPatchMapWithMove } = PatchMapWithMove' (PatchMapWithPatchingMove (Coerce unPatchMapWithMove))
 
 _PatchMapWithMove
   :: Iso
@@ -99,55 +133,6 @@ instance TraversableWithIndex k (PatchMapWithMove k) where
     _PatchMapWithMove .>
     itraversed <.
     traverse
-
-newtype NodeInfo k v = NodeInfo' { unNodeInfo' :: PM.NodeInfo k (Proxy v) }
-  deriving ( Show, Read, Eq, Ord
-           )
-
-{-# COMPLETE NodeInfo #-}
-pattern NodeInfo :: To k -> From k v -> NodeInfo k v
-pattern NodeInfo { _nodeInfo_to, _nodeInfo_from } =
-  NodeInfo' (PM.NodeInfo
-    { PM._nodeInfo_to = _nodeInfo_to
-    , PM._nodeInfo_from = _nodeInfo_from
-    })
-
-_NodeInfo
-  :: Iso
-       (NodeInfo k0 v0)
-       (NodeInfo k1 v1)
-       (PM.NodeInfo k0 (Proxy v0))
-       (PM.NodeInfo k1 (Proxy v1))
-_NodeInfo = iso unNodeInfo' NodeInfo'
-
-instance Functor (NodeInfo k) where
-  fmap f = runIdentity . traverse (Identity . f)
-
-instance Foldable (NodeInfo k) where
-  foldMap = foldMapDefault
-
-instance Traversable (NodeInfo k) where
-  traverse = _NodeInfo . traverseNodeInfo
-    where
-      traverseNodeInfo
-        :: Traversal (PM.NodeInfo k (Proxy a)) (PM.NodeInfo k (Proxy b)) a b
-      traverseNodeInfo = PM.bitraverseNodeInfo pure (\ ~Proxy -> pure Proxy)
-
-type From k v = PM.From k (Proxy v)
-
-{-# COMPLETE From_Insert, From_Delete, From_Move #-}
-
-pattern From_Insert :: v -> From k v
-pattern From_Insert v = PM.From_Insert v
-
-pattern From_Delete :: From k v
-pattern From_Delete = PM.From_Delete
-
-pattern From_Move :: k -> From k v
-pattern From_Move k = PM.From_Move k Proxy
-
-type To k = PM.To k
-
 
 -- | Create a 'PatchMapWithMove', validating it
 patchMapWithMove :: Ord k => Map k (NodeInfo k v) -> Maybe (PatchMapWithMove k v)
@@ -224,9 +209,62 @@ patchThatChangesMap :: (Ord k, Ord v) => Map k v -> Map k v -> PatchMapWithMove 
 patchThatChangesMap oldByIndex newByIndex = PatchMapWithMove' $
   PM.patchThatChangesMap oldByIndex newByIndex
 
+--
+-- NodeInfo
+--
+
+-- | Holds the information about each key: where its new value should come from,
+-- and where its old value should go to
+newtype NodeInfo k (v :: Type) = NodeInfo' { unNodeInfo' :: PM.NodeInfo k (Proxy v) }
+
+deriving instance (Show k, Show p) => Show (NodeInfo k p)
+deriving instance (Read k, Read p) => Read (NodeInfo k p)
+deriving instance (Eq k, Eq p) => Eq (NodeInfo k p)
+deriving instance (Ord k, Ord p) => Ord (NodeInfo k p)
+
+{-# COMPLETE NodeInfo #-}
+pattern NodeInfo :: To k -> From k v -> NodeInfo k v
+_nodeInfo_to :: NodeInfo k v -> To k
+_nodeInfo_from :: NodeInfo k v -> From k v
+pattern NodeInfo { _nodeInfo_to, _nodeInfo_from } =
+  NodeInfo' (PM.NodeInfo
+    { PM._nodeInfo_to = _nodeInfo_to
+    , PM._nodeInfo_from = Coerce _nodeInfo_from
+    })
+
+_NodeInfo
+  :: Iso
+       (NodeInfo k0 v0)
+       (NodeInfo k1 v1)
+       (PM.NodeInfo k0 (Proxy v0))
+       (PM.NodeInfo k1 (Proxy v1))
+_NodeInfo = iso unNodeInfo' NodeInfo'
+
+instance Functor (NodeInfo k) where
+  fmap f = runIdentity . traverse (Identity . f)
+
+instance Foldable (NodeInfo k) where
+  foldMap = foldMapDefault
+
+instance Traversable (NodeInfo k) where
+  traverse = _NodeInfo . traverseNodeInfo
+    where
+      traverseNodeInfo
+        :: Traversal (PM.NodeInfo k (Proxy a)) (PM.NodeInfo k (Proxy b)) a b
+      traverseNodeInfo = PM.bitraverseNodeInfo pure (\ ~Proxy -> pure Proxy)
+
+bitraverseNodeInfo
+  :: Applicative f
+  => (k0 -> f k1)
+  -> (v0 -> f v1)
+  -> NodeInfo k0 v0 -> f (NodeInfo k1 v1)
+bitraverseNodeInfo fk fv = fmap coerce
+  . PM.bitraverseNodeInfo fk (\ ~Proxy -> pure Proxy) fv
+  . coerce
+
 -- | Change the 'From' value of a 'NodeInfo'
 nodeInfoMapFrom :: (From k v -> From k v) -> NodeInfo k v -> NodeInfo k v
-nodeInfoMapFrom = coerce . PM.nodeInfoMapFrom
+nodeInfoMapFrom f = coerce . PM.nodeInfoMapFrom (unFrom' . f . From') . coerce
 
 -- | Change the 'From' value of a 'NodeInfo', using a 'Functor' (or
 -- 'Applicative', 'Monad', etc.) action to get the new value
@@ -234,11 +272,43 @@ nodeInfoMapMFrom
   :: Functor f
   => (From k v -> f (From k v))
   -> NodeInfo k v -> f (NodeInfo k v)
-nodeInfoMapMFrom f = fmap coerce . PM.nodeInfoMapMFrom f . coerce
+nodeInfoMapMFrom f = fmap coerce
+  . PM.nodeInfoMapMFrom (fmap unFrom' . f . From')
+  . coerce
 
 -- | Set the 'To' field of a 'NodeInfo'
 nodeInfoSetTo :: To k -> NodeInfo k v -> NodeInfo k v
 nodeInfoSetTo = coerce . PM.nodeInfoSetTo
+
+--
+-- From
+--
+
+-- | Describe how a key's new value should be produced
+newtype From k (v :: Type) = From' { unFrom' :: PM.From k (Proxy v) }
+
+{-# COMPLETE From_Insert, From_Delete, From_Move #-}
+
+-- | Insert the given value here
+pattern From_Insert :: v -> From k v
+pattern From_Insert v = From' (PM.From_Insert v)
+
+-- | Delete the existing value, if any, from here
+pattern From_Delete :: From k v
+pattern From_Delete = From' (PM.From_Delete)
+
+-- | Move the value here from the given key
+pattern From_Move :: k -> From k v
+pattern From_Move k = From' (PM.From_Move k Proxy)
+
+bitraverseFrom
+  :: Applicative f
+  => (k0 -> f k1)
+  -> (v0 -> f v1)
+  -> From k0 v0 -> f (From k1 v1)
+bitraverseFrom fk fv = fmap coerce
+  . PM.bitraverseFrom fk (\ ~Proxy -> pure Proxy) fv
+  . coerce
 
 makeWrapped ''PatchMapWithMove
 makeWrapped ''NodeInfo

@@ -3,8 +3,10 @@
 ## Unreleased
 
 * Rewrite `PatchMapWithMove` in terms of `PatchMapWithPatchingMove`.
-  Care is taken to make this as little of a breaking change as possible.
-  In particular, `PatchMapWithMove` is a newtype of `PatchMapWithPatchingMove` as is the `NodeInfo` of `PatchMapWithPatchingMove`'s `NodeInfo`.
+  Care is taken to make this not a breaking change.
+  In particular, `PatchMapWithMove` is a newtype of `PatchMapWithPatchingMove`, as is the `NodeInfo` and `From` of `PatchMapWithPatchingMove`'s versions of those.
+  There are complete constructor and field patterns too, and everything is
+  exported under the newtype as real constructors and fields would be.
 
 ## 0.0.4.0
 
