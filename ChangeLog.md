@@ -6,6 +6,10 @@
   Care is taken to make this as little of a breaking change as possible.
   In particular, `PatchMapWithMove` is a newtype of `PatchMapWithPatchingMove` as is the `NodeInfo` of `PatchMapWithPatchingMove`'s `NodeInfo`.
 
+## 0.0.4.0
+
+* Enable PolyKinds
+
 ## 0.0.3.2
 
 * Update version bounds
