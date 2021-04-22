@@ -65,11 +65,8 @@ module Data.Patch.MapWithMove
 import Data.Coerce
 import Data.Kind (Type)
 import Data.Patch.Class
-import Data.Patch.MapWithPatchingMove
-  ( PatchMapWithPatchingMove (..)
-  )
-import qualified Data.Patch.MapWithPatchingMove as PM
-import Data.Patch.MapWithPatchingMove (To) -- already a transparent synonym
+import Data.Patch.MapWithPatchingMove (PatchMapWithPatchingMove(..), To)
+import qualified Data.Patch.MapWithPatchingMove as PM -- already a transparent synonym
 
 import Control.Lens hiding (from, to)
 import Data.List
@@ -226,11 +223,11 @@ deriving instance (Ord k, Ord p) => Ord (NodeInfo k p)
 pattern NodeInfo :: To k -> From k v -> NodeInfo k v
 _nodeInfo_to :: NodeInfo k v -> To k
 _nodeInfo_from :: NodeInfo k v -> From k v
-pattern NodeInfo { _nodeInfo_to, _nodeInfo_from } =
-  NodeInfo' (PM.NodeInfo
+pattern NodeInfo { _nodeInfo_to, _nodeInfo_from } = NodeInfo'
+  PM.NodeInfo
     { PM._nodeInfo_to = _nodeInfo_to
     , PM._nodeInfo_from = Coerce _nodeInfo_from
-    })
+    }
 
 _NodeInfo
   :: Iso
@@ -295,7 +292,7 @@ pattern From_Insert v = From' (PM.From_Insert v)
 
 -- | Delete the existing value, if any, from here
 pattern From_Delete :: From k v
-pattern From_Delete = From' (PM.From_Delete)
+pattern From_Delete = From' PM.From_Delete
 
 -- | Move the value here from the given key
 pattern From_Move :: k -> From k v
