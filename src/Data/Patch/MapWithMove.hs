@@ -244,11 +244,7 @@ instance Foldable (NodeInfo k) where
   foldMap = foldMapDefault
 
 instance Traversable (NodeInfo k) where
-  traverse = _NodeInfo . traverseNodeInfo
-    where
-      traverseNodeInfo
-        :: Traversal (PM.NodeInfo k (Proxy a)) (PM.NodeInfo k (Proxy b)) a b
-      traverseNodeInfo = PM.bitraverseNodeInfo pure (\ ~Proxy -> pure Proxy)
+  traverse = bitraverseNodeInfo pure
 
 bitraverseNodeInfo
   :: Applicative f
