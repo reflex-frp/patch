@@ -19,9 +19,7 @@
 module Data.Patch.MapWithMove
   ( PatchMapWithMove
     ( PatchMapWithMove
-    , -- | Extract the representation of the 'PatchMapWithMove' as a map of
-      -- 'NodeInfo'.
-      unPatchMapWithMove
+    , unPatchMapWithMove
     , ..
     )
   , patchMapWithMove
@@ -99,6 +97,8 @@ pattern Coerce x <- (coerce -> x)
 
 {-# COMPLETE PatchMapWithMove #-}
 pattern PatchMapWithMove :: Map k (NodeInfo k v) -> PatchMapWithMove k v
+-- | Extract the representation of the 'PatchMapWithMove' as a map of
+-- 'NodeInfo'.
 unPatchMapWithMove :: PatchMapWithMove k v -> Map k (NodeInfo k v)
 pattern PatchMapWithMove { unPatchMapWithMove } = PatchMapWithMove' (PatchMapWithPatchingMove (Coerce unPatchMapWithMove))
 
