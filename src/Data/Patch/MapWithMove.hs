@@ -309,3 +309,4 @@ bitraverseFrom fk fv = fmap coerce
 
 makeWrapped ''PatchMapWithMove
 makeWrapped ''NodeInfo
+makeWrapped ''From
