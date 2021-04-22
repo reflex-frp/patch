@@ -156,8 +156,8 @@ moveMapKey src dst = PatchMapWithMove' $ PM.moveMapKey src dst
 -- @
 --     let aMay = Map.lookup a map
 --         bMay = Map.lookup b map
---     in maybe id (Map.insert a) (bMay `mplus` aMay)
---      . maybe id (Map.insert b) (aMay `mplus` bMay)
+--     in maybe id (Map.insert a) (bMay <> aMay)
+--      . maybe id (Map.insert b) (aMay <> bMay)
 --      . Map.delete a . Map.delete b $ map
 -- @
 swapMapKey :: Ord k => k -> k -> PatchMapWithMove k v

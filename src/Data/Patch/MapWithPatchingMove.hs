@@ -136,8 +136,8 @@ moveMapKey src dst
 -- @
 --     let aMay = Map.lookup a map
 --         bMay = Map.lookup b map
---     in maybe id (Map.insert a) (bMay `mplus` aMay)
---      . maybe id (Map.insert b) (aMay `mplus` bMay)
+--     in maybe id (Map.insert a) (bMay <> aMay)
+--      . maybe id (Map.insert b) (aMay <> bMay)
 --      . Map.delete a . Map.delete b $ map
 -- @
 swapMapKey
@@ -281,6 +281,8 @@ deriving instance (Read k, Read p, Read (PatchTarget p)) => Read (NodeInfo k p)
 deriving instance (Eq k, Eq p, Eq (PatchTarget p)) => Eq (NodeInfo k p)
 deriving instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (NodeInfo k p)
 
+-- | Traverse the 'NodeInfo' over the key, patch, and patch target. Because of
+-- the type families here, this doesn't it any bi- or tri-traversal class.
 bitraverseNodeInfo
   :: Applicative f
   => (k0 -> f k1)
@@ -322,6 +324,8 @@ deriving instance (Read k, Read p, Read (PatchTarget p)) => Read (From k p)
 deriving instance (Eq k, Eq p, Eq (PatchTarget p)) => Eq (From k p)
 deriving instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (From k p)
 
+-- | Traverse the 'From' over the key, patch, and patch target. Because of
+-- the type families here, this doesn't it any bi- or tri-traversal class.
 bitraverseFrom
   :: Applicative f
   => (k0 -> f k1)
