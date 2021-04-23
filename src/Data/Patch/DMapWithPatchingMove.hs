@@ -265,10 +265,6 @@ instance forall k p
           -- The item is destroyed in the second patch, so indicate that it is
           -- destroyed in the source map
           [fromBefore :=> Const ( Fixup_Update $ That To_NonMove)]
-        --(To_Move (Some toAfter), From_Insert val) ->
-        --  [toAfter :=> Fixup_Update (This $ From_Insert $ applyAlwaysHet2 p val)]
-        --(To_Move (Some toAfter), From_Delete) ->
-        --  [toAfter :=> Fixup_Update (This From_Delete)]
         (To_Move (Some toAfter), _) ->
           [toAfter :=> Const (Fixup_Update $ This $ between :=> editBefore)]
         (To_NonMove, _) ->
