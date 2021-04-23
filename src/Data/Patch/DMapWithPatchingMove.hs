@@ -290,7 +290,7 @@ instance forall k p
               f@(From_Move ((between0 :: k between0) :=> Flip (p' :: p between0 a))) -> case getHere u of -- The `from` fixup comes from the "old" patch
                 Nothing -> f -- If there's no `from` fixup, just use the "new" `from`
                 Just ((between1 :: k between1) :=> frm) -> case geq between0 between1 of
-                  Nothing -> error "fixup joined-on key did not match"
+                  Nothing -> error "PatchMapWithPatchingMove: fixup joined-on key did not match"
                   Just Refl -> case frm of
                     From_Insert v -> From_Insert $ applyAlwaysHet2 p' v
                     From_Delete -> From_Delete
