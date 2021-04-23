@@ -27,9 +27,15 @@ import Data.Patch.Class as X
 import Data.Patch.DMap as X hiding (getDeletions)
 import Data.Patch.DMapWithMove as X
   ( PatchDMapWithMove, const2PatchDMapWithMoveWith, mapPatchDMapWithMove
-  , patchDMapWithMoveToPatchMapWithPatchingMoveWith
+  , patchDMapWithMoveToPatchMapWithMoveWith
   , traversePatchDMapWithMoveWithKey, unPatchDMapWithMove
   , unsafePatchDMapWithMove, weakenPatchDMapWithMoveWith
+  )
+import Data.Patch.DMapWithPatchingMove as X
+  ( PatchDMapWithPatchingMove, const2PatchDMapWithPatchingMoveWith, mapPatchDMapWithPatchingMove
+  , patchDMapWithPatchingMoveToPatchMapWithPatchingMoveWith
+  , traversePatchDMapWithPatchingMoveWithKey, unPatchDMapWithPatchingMove
+  , unsafePatchDMapWithPatchingMove, weakenPatchDMapWithPatchingMoveWith
   )
 import Data.Patch.IntMap as X hiding (getDeletions)
 import Data.Patch.Map as X

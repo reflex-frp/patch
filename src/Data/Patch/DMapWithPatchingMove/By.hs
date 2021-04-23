@@ -14,7 +14,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 
-module Data.Patch.DMapWithMove.By where
+module Data.Patch.DMapWithPatchingMove.By where
 
 import Data.Semigroupoid as Cat
 

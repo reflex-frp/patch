@@ -50,7 +50,8 @@ library
                  , Data.Patch.Class
                  , Data.Patch.DMap
                  , Data.Patch.DMapWithMove
-                 , Data.Patch.DMapWithMove.By
+                 , Data.Patch.DMapWithPatchingMove
+                 , Data.Patch.DMapWithPatchingMove.By
                  , Data.Patch.IntMap
                  , Data.Patch.Map
                  , Data.Patch.MapWithMove
