@@ -255,10 +255,10 @@ instance forall k p
       h :: DSum k (ToFrom k p) -> [DSum k (Const (Fixup k p))]
       h ((between :: k between) :=> ToFrom editAfter editBefore) = case (editAfter, editBefore) of
         (To_Move (Some (toAfter :: k after)), From_Move ((fromBefore :: k before) :=> Flip p) :: From k p between) ->
-          case toAfter `geq` fromBefore of
-            Just Refl | Just Refl <- Cat.isId p ->
+          case Cat.isId p of
+            Just Refl ->
               [ toAfter :=> Const Fixup_Delete ]
-            _ ->
+            Nothing ->
               [ toAfter :=> Const (Fixup_Update $ This $ between :=> From_Move (fromBefore :=> Flip p))
               , fromBefore :=> Const (Fixup_Update $ That $ To_Move $ Some toAfter)
               ]
