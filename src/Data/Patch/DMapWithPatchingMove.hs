@@ -20,7 +20,7 @@
 module Data.Patch.DMapWithPatchingMove where
 
 import qualified Control.Category as Cat
---import qualified Control.Category.DecidablyEmpty as Cat
+import qualified Control.Category.DecidablyEmpty as Cat
 
 import Data.Constraint.Extras (Has')
 import Data.Dependent.Map (DMap)
@@ -88,6 +88,7 @@ newtype PatchDMapWithPatchingMove k v = PatchDMapWithPatchingMove (DMap k (NodeI
 
 -- It won't let me derive for some reason
 instance ( GCompare k
+         , Cat.DecidablyEmpty v
          , Cat.Semigroupoid v
          , PatchHet2 v
          , PatchSource1 v ~ PatchTarget1 v
@@ -239,7 +240,7 @@ data Fixup k p
 instance forall k p
          . ( GCompare k
            , Cat.Semigroupoid p
-           -- , Cat.DecidablyEmpty p
+           , Cat.DecidablyEmpty p
            , PatchHet2 p
            , PatchSource1 p ~ PatchTarget1 p
            )
@@ -254,10 +255,10 @@ instance forall k p
       h :: DSum k (ToFrom k p) -> [DSum k (Const (Fixup k p))]
       h ((between :: k between) :=> ToFrom editAfter editBefore) = case (editAfter, editBefore) of
         (To_Move (Some (toAfter :: k after)), From_Move ((fromBefore :: k before) :=> Flip p) :: From k p between) ->
-          --case toAfter `geq` fromBefore of
-          --  Just Refl | Just Refl <- Cat.isId p0 ->
-          --    [ toAfter :=> Fixup_Delete ]
-          --  _ ->
+          case toAfter `geq` fromBefore of
+            Just Refl | Just Refl <- Cat.isId p ->
+              [ toAfter :=> Const Fixup_Delete ]
+            _ ->
               [ toAfter :=> Const (Fixup_Update $ This $ between :=> From_Move (fromBefore :=> Flip p))
               , fromBefore :=> Const (Fixup_Update $ That $ To_Move $ Some toAfter)
               ]
@@ -313,7 +314,7 @@ instance forall k p
 -- @'applyAlways' (p <> q) == 'applyAlways' p . 'applyAlways' q@
 instance ( GCompare k
          , Cat.Semigroupoid p
-         -- , DecidablyEmpty p
+         , Cat.DecidablyEmpty p
          , PatchHet2 p
          , PatchSource1 p ~ PatchTarget1 p
          ) => Monoid (PatchDMapWithPatchingMove k p) where
