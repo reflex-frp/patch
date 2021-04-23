@@ -1,9 +1,11 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 -- | The interface for types which represent changes made to other types
@@ -12,14 +14,17 @@ module Data.Patch.Class where
 import qualified Data.Semigroupoid as Cat
 import Data.Functor.Identity
 import Data.Functor.Misc
+import Data.Kind (Type)
 import Data.Maybe
+#if !MIN_VERSION_base(4,11,0)
 import Data.Semigroup (Semigroup(..))
+#endif
 import Data.Proxy
 import Data.Type.Equality ((:~:) (..))
 
 class PatchHet p where
-  type PatchSource p :: *
-  type PatchTarget p :: *
+  type PatchSource p :: Type
+  type PatchTarget p :: Type
   -- | Apply the patch @p a@ to the value @a@.  If no change is needed, return
   -- 'Nothing'.
   applyHet
@@ -63,11 +68,11 @@ instance PatchHet (Identity a) where
 instance Patch (Identity a) where
   apply (Identity a) _ = Just a
 
--- | 'Proxy' can be used as a 'Patch' that always fully replaces the value
-instance PatchHet (Proxy (a :: *)) where
+-- | 'Proxy' can be used as a 'Patch' that does nothing.
+instance forall (a :: Type). PatchHet (Proxy a) where
   type PatchSource (Proxy a) = a
   type PatchTarget (Proxy a) = a
-instance Patch (Proxy (a :: *)) where
+instance forall (a :: Type). Patch (Proxy a) where
   apply ~Proxy _ = Nothing
 
 -- | Like '(.)', but composes functions that return patches rather than

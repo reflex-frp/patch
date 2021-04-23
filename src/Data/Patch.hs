@@ -18,8 +18,8 @@ import Data.Functor.Const (Const (..))
 import Data.Functor.Identity
 import Data.Map.Monoidal (MonoidalMap)
 import Data.Proxy
-#if !MIN_VERSION_base(4,9,0)
-import Data.Semigroup (Semigroup (..), (<>))
+#if !MIN_VERSION_base(4,11,0)
+import Data.Semigroup (Semigroup (..))
 #endif
 import GHC.Generics
 
@@ -27,7 +27,7 @@ import Data.Patch.Class as X
 import Data.Patch.DMap as X hiding (getDeletions)
 import Data.Patch.DMapWithMove as X
   ( PatchDMapWithMove, const2PatchDMapWithMoveWith, mapPatchDMapWithMove
-  , patchDMapWithMoveToPatchMapWithMoveWith
+  , patchDMapWithMoveToPatchMapWithPatchingMoveWith
   , traversePatchDMapWithMoveWithKey, unPatchDMapWithMove
   , unsafePatchDMapWithMove, weakenPatchDMapWithMoveWith
   )

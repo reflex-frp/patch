@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PolyKinds #-}
@@ -5,6 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
+
 -- | 'Patch'es on 'DMap' that consist only of insertions (or overwrites) and deletions.
 module Data.Patch.DMap where
 
@@ -12,13 +14,18 @@ import Data.Patch.Class
 import Data.Patch.IntMap
 import Data.Patch.Map
 
-import Data.Dependent.Map (DMap, DSum (..), GCompare (..))
+import Data.Dependent.Map (DMap)
+import Data.Dependent.Sum (DSum (..))
+import Data.GADT.Compare (GCompare (..))
 import qualified Data.Dependent.Map as DMap
 import Data.Functor.Constant
 import Data.Functor.Misc
 import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
+import Data.Monoid.DecidablyEmpty
+#if !MIN_VERSION_base(4,11,0)
 import Data.Semigroup (Semigroup (..))
+#endif
 import Data.Some (Some)
 
 -- | A set of changes to a 'DMap'.  Any element may be inserted/updated or deleted.
@@ -29,6 +36,10 @@ newtype PatchDMap k v = PatchDMap { unPatchDMap :: DMap k (ComposeMaybe v) }
 deriving instance GCompare k => Semigroup (PatchDMap k v)
 
 deriving instance GCompare k => Monoid (PatchDMap k v)
+
+-- It won't let me derive for some reason
+instance GCompare k => DecidablyEmpty (PatchDMap k v) where
+  isEmpty (PatchDMap m) = DMap.null m
 
 -- | Apply the insertions or deletions to a given 'DMap'.
 instance GCompare k => PatchHet (PatchDMap k v) where
