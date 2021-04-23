@@ -259,13 +259,13 @@ instance forall k p
             Just Refl ->
               [ toAfter :=> Const Fixup_Delete ]
             Nothing ->
-              [ toAfter :=> Const (Fixup_Update $ This $ between :=> From_Move (fromBefore :=> Flip p))
-              , fromBefore :=> Const (Fixup_Update $ That $ To_Move $ Some toAfter)
+              [ toAfter :=> Const (Fixup_Update $ This $ between :=> editBefore)
+              , fromBefore :=> Const (Fixup_Update $ That editAfter)
               ]
         (To_NonMove, From_Move (fromBefore :=> _)) ->
           -- The item is destroyed in the second patch, so indicate that it is
           -- destroyed in the source map
-          [fromBefore :=> Const ( Fixup_Update $ That To_NonMove)]
+          [fromBefore :=> Const (Fixup_Update $ That To_NonMove)]
         (To_Move (Some toAfter), _) ->
           [toAfter :=> Const (Fixup_Update $ This $ between :=> editBefore)]
         (To_NonMove, _) ->
