@@ -21,7 +21,6 @@ are relevant to the use of 'Functor'-based datastructures like
 module Data.Functor.Misc
   ( -- * Const2
     Const2 (..)
-  , Proxy3 (..)
   , First2 (..)
   , unConst2
   , dmapToMap
@@ -43,7 +42,6 @@ module Data.Functor.Misc
   , ComposeMaybe (..)
   ) where
 
-import qualified Control.Category as Cat
 import Data.Dependent.Map (DMap)
 import qualified Data.Dependent.Map as DMap
 import Data.Dependent.Sum
@@ -95,17 +93,6 @@ instance Ord k => GCompare (Const2 k v) where
     LT -> GLT
     EQ -> GEQ
     GT -> GGT
-
-data Proxy3 :: x -> y -> z -> Type where
-  Proxy3 :: Proxy3 vx vy vz
-  deriving ( Show, Read, Eq, Ord
-           , Functor, Foldable, Traversable
-           , Typeable
-           )
-
-instance Cat.Category (Proxy3 x) where
-  id = Proxy3
-  ~Proxy3 . ~Proxy3 = Proxy3
 
 newtype First2 (t :: k -> Type) (a :: k) (b :: k) = First2 (t b)
   deriving ( Show, Read, Eq, Ord

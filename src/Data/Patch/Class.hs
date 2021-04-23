@@ -3,11 +3,13 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 {-|
 Description: The module provides the 'Patch' class.
@@ -17,6 +19,7 @@ This is a class for types which represent changes made to other types
 module Data.Patch.Class where
 
 import qualified Data.Semigroupoid as Cat
+import qualified Control.Category as Cat
 import Data.Functor.Identity
 import Data.Functor.Misc
 import Data.Kind (Type)
@@ -25,7 +28,7 @@ import Data.Maybe
 import Data.Semigroup (Semigroup(..))
 #endif
 import Data.Proxy
-import Data.Type.Equality ((:~:) (..))
+import Data.Typeable
 
 class PatchHet p where
   type PatchSource p :: Type
@@ -165,12 +168,25 @@ instance PatchHet (First2 (t :: k -> Type) (from :: k) (to :: k)) where
   type PatchTarget (First2 t from to) = t to
   applyHet (First2 val) _ = Right val
 
--- | 'Proxy3' can be used as a 'Patch' that always does nothing
-instance PatchHet (Proxy3 (t :: k -> Type) (a :: k) (a :: k)) where
-  type PatchSource (Proxy3 t a a) = t a
-  type PatchTarget (Proxy3 t a a) = t a
-  applyHet ~Proxy3 _ = Left Refl
+data IndexedEq :: (k -> Type) -> k -> k -> Type where
+  IndexedRefl :: IndexedEq k x x
+  deriving (Typeable)
 
-instance PatchHet2Base (Proxy3 (t :: k -> Type) :: k -> k -> Type) where
-  type PatchSource1 (Proxy3 t) = t
-  type PatchTarget1 (Proxy3 t) = t
+deriving instance Eq (IndexedEq k x y)
+deriving instance Ord (IndexedEq k x y)
+deriving instance Show (IndexedEq k x y)
+deriving instance Read (IndexedEq k x x)
+
+instance Cat.Category (IndexedEq x) where
+  id = IndexedRefl
+  IndexedRefl . IndexedRefl = IndexedRefl
+
+-- | 'IndexedEq' can be used as a 'Patch' that always does nothing
+instance PatchHet (IndexedEq (t :: k -> Type) (a :: k) (b :: k)) where
+  type PatchSource (IndexedEq t a b) = t a
+  type PatchTarget (IndexedEq t a b) = t b
+  applyHet IndexedRefl _ = Left Refl
+
+instance PatchHet2Base (IndexedEq (t :: k -> Type) :: k -> k -> Type) where
+  type PatchSource1 (IndexedEq t) = t
+  type PatchTarget1 (IndexedEq t) = t

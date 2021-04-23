@@ -28,7 +28,7 @@ import Data.Dependent.Sum (DSum (..))
 import qualified Data.Dependent.Map as DMap
 import Data.Functor.Constant (Constant (..))
 import Data.Functor.Misc
-  ( Const2 (..), Proxy3 (..)
+  ( Const2 (..)
   , weakenDMapWith
   , dmapToMapWith
   )
@@ -53,6 +53,7 @@ import Data.Patch.Class
   ( Patch (..), PatchHet (..)
   , PatchHet2 (..), PatchSource1, PatchTarget1
   , applyAlwaysHet2
+  , IndexedEq (..)
   )
 import Data.Patch.MapWithPatchingMove (PatchMapWithPatchingMove (..))
 import qualified Data.Patch.MapWithPatchingMove as MapWithPatchingMove
@@ -359,10 +360,10 @@ insertDMapKey k v =
 -- @
 moveDMapKey
   :: GCompare k
-  => k a -> k a -> PatchDMapWithPatchingMove k (Proxy3 v)
+  => k a -> k a -> PatchDMapWithPatchingMove k (IndexedEq v)
 moveDMapKey src dst = case src `geq` dst of
   Nothing -> PatchDMapWithPatchingMove $ DMap.fromList
-    [ dst :=> NodeInfo (From_Move (src :=> Flip Proxy3)) To_NonMove
+    [ dst :=> NodeInfo (From_Move (src :=> Flip IndexedRefl)) To_NonMove
     , src :=> NodeInfo From_Delete (To_Move $ Some dst)
     ]
   Just _ -> PatchDMapWithPatchingMove DMap.empty
@@ -377,11 +378,11 @@ moveDMapKey src dst = case src `geq` dst of
 --      . maybe id (DMap.insert b) (aMay <> bMay)
 --      . DMap.delete a . DMap.delete b $ dmap
 -- @
-swapDMapKey :: GCompare k => k a -> k a -> PatchDMapWithPatchingMove k (Proxy3 v)
+swapDMapKey :: GCompare k => k a -> k a -> PatchDMapWithPatchingMove k (IndexedEq v)
 swapDMapKey src dst = case src `geq` dst of
   Nothing -> PatchDMapWithPatchingMove $ DMap.fromList
-    [ dst :=> NodeInfo (From_Move (src :=> Flip Proxy3)) (To_Move $ Some src)
-    , src :=> NodeInfo (From_Move (dst :=> Flip Proxy3)) (To_Move $ Some dst)
+    [ dst :=> NodeInfo (From_Move (src :=> Flip IndexedRefl)) (To_Move $ Some src)
+    , src :=> NodeInfo (From_Move (dst :=> Flip IndexedRefl)) (To_Move $ Some dst)
     ]
   Just _ -> PatchDMapWithPatchingMove DMap.empty
 
@@ -566,16 +567,16 @@ const2PatchDMapWithPatchingMoveWith
   :: forall k v v' a
   .  (v -> v' a)
   -> PatchMapWithPatchingMove k (Proxy v)
-  -> PatchDMapWithPatchingMove (Const2 k a) (Proxy3 v')
+  -> PatchDMapWithPatchingMove (Const2 k a) (IndexedEq v')
 const2PatchDMapWithPatchingMoveWith f (PatchMapWithPatchingMove p) =
   PatchDMapWithPatchingMove $ DMap.fromDistinctAscList $ g <$> Map.toAscList p
   where g :: (k, MapWithPatchingMove.NodeInfo k (Proxy v))
-          -> DSum (Const2 k a) (NodeInfo (Const2 k a) (Proxy3 v'))
+          -> DSum (Const2 k a) (NodeInfo (Const2 k a) (IndexedEq v'))
         g (k, ni) = Const2 k :=> NodeInfo
           { _nodeInfo_from = case MapWithPatchingMove._nodeInfo_from ni of
               MapWithPatchingMove.From_Insert v -> From_Insert $ f v
               MapWithPatchingMove.From_Delete -> From_Delete
-              MapWithPatchingMove.From_Move fromKey Proxy -> From_Move $ Const2 fromKey :=> Flip Proxy3
+              MapWithPatchingMove.From_Move fromKey Proxy -> From_Move $ Const2 fromKey :=> Flip IndexedRefl
           , _nodeInfo_to = case MapWithPatchingMove._nodeInfo_to ni of
               Nothing -> To_NonMove
               Just toKey -> To_Move $ Some (Const2 toKey)
