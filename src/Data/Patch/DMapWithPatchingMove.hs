@@ -42,9 +42,10 @@ import Data.Semigroupoid as Cat
 #if !MIN_VERSION_base(4,11,0)
 import Data.Semigroup (Semigroup (..), (<>))
 #endif
-import Data.Some (Some, mkSome)
+import Data.Some (Some (Some), mkSome)
 import Data.Proxy (Proxy (..))
 import Data.These (These (..))
+import Data.Type.Equality ((:~:)(..))
 
 import Data.Patch.Class
   ( Patch (..), PatchHet (..)
@@ -172,7 +173,7 @@ data To (k :: a -> *) (p :: a -> a -> *) :: a -> * where
   -- | Move the value from the given key @k a@ to this key. The target key
   -- should also have an entry in the patch giving the current key in
   -- @_nodeInfo_from@, usually but not necessarily with @To_Delete@.
-  To_Move :: !(DSum k (p from)) -> To k p from
+  To_Move :: !(Some k) -> To k p from
 
 deriving instance ( Show (k a), GShow k
                   , Has' Show k (p a)
@@ -212,20 +213,20 @@ validationErrorsForPatchDMapWithPatchingMove m =
     noSelfMoves = mapMaybe selfMove . DMap.toAscList $ m
     selfMove (dst :=> NodeInfo (From_Move (src :=> _)) _)
       | Just _ <- dst `geq` src = Just $ "self move of key " <> gshow src <> " at destination side"
-    selfMove (src :=> NodeInfo _ (To_Move (dst :=> _)))
+    selfMove (src :=> NodeInfo _ (To_Move (Some dst)))
       | Just _ <- src `geq` dst = Just $ "self move of key " <> gshow dst <> " at source side"
     selfMove _ = Nothing
     movesBalanced = mapMaybe unbalancedMove . DMap.toAscList $ m
     unbalancedMove (dst :=> NodeInfo (From_Move (src :=> _)) _) =
       case DMap.lookup src m of
         Nothing -> Just $ "unbalanced move at destination key " <> gshow dst <> " supposedly from " <> gshow src <> " but source key is not in the patch"
-        Just (NodeInfo _ (To_Move (dst' :=> _))) ->
+        Just (NodeInfo _ (To_Move (Some dst'))) ->
           if isNothing (dst' `geq` dst)
             then Just $ "unbalanced move at destination key " <> gshow dst <> " from " <> gshow src <> " is going to " <> gshow dst' <> " instead"
             else Nothing
         _ ->
           Just $ "unbalanced move at destination key " <> gshow dst <> " supposedly from " <> gshow src <> " but source key has no move to key"
-    unbalancedMove (src :=> NodeInfo _ (To_Move (dst :=> _))) =
+    unbalancedMove (src :=> NodeInfo _ (To_Move (Some dst))) =
       case DMap.lookup dst m of
         Nothing -> Just $ " unbalanced move at source key " <> gshow src <> " supposedly going to " <> gshow dst <> " but destination key is not in the patch"
         Just (NodeInfo (From_Move (src' :=> _)) _) ->
@@ -243,16 +244,18 @@ data Pair1 f g a = Pair1 (f a) (g a)
 -- |Helper data structure used for composing patches using the monoid instance.
 data Fixup k p a
    = Fixup_Delete
-   | Fixup_Update (These (From k p a) (To k p a))
+   | Fixup_Update (These (DSum k (From k p)) (To k p a))
 
 -- | Compose patches having the same effect as applying the patches in turn:
 -- @'applyAlways' (p <> q) == 'applyAlways' p . 'applyAlways' q@
-instance ( GCompare k
-         , Cat.Semigroupoid p
-         -- , Cat.DecidablyEmpty p
-         , PatchHet2 p
-         , PatchSource1 p ~ PatchTarget1 p
-         ) => Semigroup (PatchDMapWithPatchingMove k p) where
+instance forall k p
+         . ( GCompare k
+           , Cat.Semigroupoid p
+           -- , Cat.DecidablyEmpty p
+           , PatchHet2 p
+           , PatchSource1 p ~ PatchTarget1 p
+           )
+         => Semigroup (PatchDMapWithPatchingMove k p) where
   PatchDMapWithPatchingMove ma <> PatchDMapWithPatchingMove mb = PatchDMapWithPatchingMove m
     where
       connections :: [DSum k (Pair1 (To k p) (From k p))]
@@ -261,23 +264,25 @@ instance ( GCompare k
         ma
         mb
       h :: DSum k (Pair1 (To k p) (From k p)) -> [DSum k (Fixup k p)]
-      h ((_ :: k between) :=> Pair1 editAfter editBefore) = case (editAfter, editBefore) of
-        (To_Move ((toAfter :: k after) :=> p1), From_Move ((fromBefore :: k before) :=> Flip p0)) ->
+      h ((between :: k between) :=> Pair1 editAfter editBefore) = case (editAfter, editBefore) of
+        (To_Move (Some (toAfter :: k after)), From_Move ((fromBefore :: k before) :=> Flip p) :: From k p between) ->
           --case toAfter `geq` fromBefore of
           --  Just Refl | Just Refl <- Cat.isId p0 ->
           --    [ toAfter :=> Fixup_Delete ]
           --  _ ->
-              [ toAfter :=> Fixup_Update (This $ From_Move $ fromBefore :=> (Flip $ p1 `o` p0))
-              , fromBefore :=> Fixup_Update (That $ To_Move $ toAfter :=> (p1 `o` p0))
+              [ toAfter :=> Fixup_Update (This $ between :=> From_Move (fromBefore :=> Flip p))
+              , fromBefore :=> Fixup_Update (That $ To_Move $ Some toAfter)
               ]
         (To_NonMove, From_Move (fromBefore :=> _)) ->
           -- The item is destroyed in the second patch, so indicate that it is
           -- destroyed in the source map
           [fromBefore :=> Fixup_Update (That To_NonMove)]
-        (To_Move (toAfter :=> p), From_Insert val) ->
-          [toAfter :=> Fixup_Update (This $ From_Insert $ applyAlwaysHet2 p val)]
-        (To_Move (toAfter :=> _), From_Delete) ->
-          [toAfter :=> Fixup_Update (This From_Delete)]
+        --(To_Move (Some toAfter), From_Insert val) ->
+        --  [toAfter :=> Fixup_Update (This $ From_Insert $ applyAlwaysHet2 p val)]
+        --(To_Move (Some toAfter), From_Delete) ->
+        --  [toAfter :=> Fixup_Update (This From_Delete)]
+        (To_Move (Some toAfter), _) ->
+          [toAfter :=> Fixup_Update (This $ between :=> editBefore)]
         (To_NonMove, _) ->
           []
       mergeFixups _ Fixup_Delete Fixup_Delete = Fixup_Delete
@@ -292,10 +297,20 @@ instance ( GCompare k
         { _nodeInfo_from = _nodeInfo_from nia
         , _nodeInfo_to = _nodeInfo_to nib
         }
+      applyFixup :: k a -> NodeInfo k p a -> Fixup k p a -> Maybe (NodeInfo k p a)
       applyFixup _ ni = \case
         Fixup_Delete -> Nothing
         Fixup_Update u -> Just $ NodeInfo
-          { _nodeInfo_from = fromMaybe (_nodeInfo_from ni) $ getHere u
+          { _nodeInfo_from = case _nodeInfo_from ni of
+              f@(From_Move ((between0 :: k between0) :=> Flip (p' :: p between0 a))) -> case getHere u of -- The `from` fixup comes from the "old" patch
+                Nothing -> f -- If there's no `from` fixup, just use the "new" `from`
+                Just ((between1 :: k between1) :=> frm) -> case geq between0 between1 of
+                  Nothing -> error "fixup joined-on key did not match"
+                  Just Refl -> case frm of
+                    From_Insert v -> From_Insert $ applyAlwaysHet2 p' v
+                    From_Delete -> From_Delete
+                    From_Move (oldKey :=> Flip (p :: p oldKey between1)) -> From_Move $ oldKey :=> Flip (p' `o` p :: p oldKey a)
+              _ -> error "PatchMapWithPatchingMove: fixup for non-move From"
           , _nodeInfo_to = fromMaybe (_nodeInfo_to ni) $ getThere u
           }
       m = DMap.differenceWithKey applyFixup (DMap.unionWithKey combineNodeInfos ma mb) fixups
@@ -362,7 +377,7 @@ moveDMapKey
 moveDMapKey src dst = case src `geq` dst of
   Nothing -> PatchDMapWithPatchingMove $ DMap.fromList
     [ dst :=> NodeInfo (From_Move (src :=> Flip Proxy3)) To_NonMove
-    , src :=> NodeInfo From_Delete (To_Move $ dst :=> Proxy3)
+    , src :=> NodeInfo From_Delete (To_Move $ Some dst)
     ]
   Just _ -> PatchDMapWithPatchingMove DMap.empty
 
@@ -379,8 +394,8 @@ moveDMapKey src dst = case src `geq` dst of
 swapDMapKey :: GCompare k => k a -> k a -> PatchDMapWithPatchingMove k (Proxy3 v)
 swapDMapKey src dst = case src `geq` dst of
   Nothing -> PatchDMapWithPatchingMove $ DMap.fromList
-    [ dst :=> NodeInfo (From_Move (src :=> Flip Proxy3)) (To_Move $ src :=> Proxy3)
-    , src :=> NodeInfo (From_Move (dst :=> Flip Proxy3)) (To_Move $ dst :=> Proxy3)
+    [ dst :=> NodeInfo (From_Move (src :=> Flip Proxy3)) (To_Move $ Some src)
+    , src :=> NodeInfo (From_Move (dst :=> Flip Proxy3)) (To_Move $ Some dst)
     ]
   Just _ -> PatchDMapWithPatchingMove DMap.empty
 
@@ -455,7 +470,7 @@ mapPatchDMapWithPatchingMove f g (PatchDMapWithPatchingMove m) =
         j :: forall a. To k p a -> To k p' a
         j = \case
           To_NonMove -> To_NonMove
-          To_Move (k :=> p) -> To_Move $ k :=> g p
+          To_Move (Some k) -> To_Move $ Some k
 
 -- | Traverse an effectful function @forall a. PatchTarget1 p a -> m (v ' a)@
 -- over the given patch, transforming @'PatchDMapWithPatchingMove' k v@ into @m
@@ -491,9 +506,9 @@ traversePatchDMapWithPatchingMoveWithKey f g (PatchDMapWithPatchingMove m) =
           From_Delete -> pure From_Delete
           From_Move (fromKey :=> Flip p) -> From_Move . (fromKey :=>) . Flip <$> g fromKey k p
         j :: forall a. k a -> To k p a -> m (To k p' a)
-        j k = \case
+        j _ = \case
           To_NonMove -> pure To_NonMove
-          To_Move (toKey :=> p) -> To_Move . (toKey :=>) <$> g k toKey p
+          To_Move (Some toKey) -> pure $ To_Move $ Some toKey
 
 -- | Map a function which transforms @'From k PatchTarget1 p a@ into a @'From k
 -- PatchTarget1 p' a@ over a @'NodeInfo' k PatchTarget1 p a@.
@@ -538,7 +553,7 @@ weakenPatchDMapWithPatchingMoveWith f g (PatchDMapWithPatchingMove m) =
               From_Move (k :=> Flip p) -> MapWithPatchingMove.From_Move (mkSome k) $ g p
           , MapWithPatchingMove._nodeInfo_to = case _nodeInfo_to ni of
               To_NonMove -> Nothing
-              To_Move (k :=> _) -> Just (mkSome k)
+              To_Move (Some k) -> Just (mkSome k)
           }
 
 -- | "Weaken" a @'PatchDMapWithPatchingMove' (Const2 k a) v@ to a @'PatchMapWithPatchingMove' k
@@ -561,7 +576,7 @@ patchDMapWithPatchingMoveToPatchMapWithPatchingMoveWith f g (PatchDMapWithPatchi
               From_Move (Const2 k :=> Flip p) -> MapWithPatchingMove.From_Move k $ g p
           , MapWithPatchingMove._nodeInfo_to = case _nodeInfo_to ni of
               To_NonMove -> Nothing
-              To_Move (Const2 k :=> _) -> Just k
+              To_Move (Some (Const2 k)) -> Just k
           }
 
 -- | "Strengthen" a @'PatchMapWithPatchingMove' k v@ into a @'PatchDMapWithPatchingMove
@@ -585,7 +600,7 @@ const2PatchDMapWithPatchingMoveWith f (PatchMapWithPatchingMove p) =
               MapWithPatchingMove.From_Move fromKey Proxy -> From_Move $ Const2 fromKey :=> Flip Proxy3
           , _nodeInfo_to = case MapWithPatchingMove._nodeInfo_to ni of
               Nothing -> To_NonMove
-              Just toKey -> To_Move $ Const2 toKey :=> Proxy3
+              Just toKey -> To_Move $ Some (Const2 toKey)
           }
 
 -- | Apply the insertions, deletions, and moves to a given 'DMap'.
