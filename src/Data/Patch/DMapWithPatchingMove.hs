@@ -32,6 +32,7 @@ import Data.Functor.Misc
   , weakenDMapWith
   , dmapToMapWith
   )
+import Data.Functor.Const (Const (..))
 import Data.Functor.Product (Product (..))
 import Data.GADT.Compare (GEq (..), GCompare (..))
 import Data.GADT.Show (GRead, GShow, gshow)
@@ -100,7 +101,7 @@ instance ( GCompare k
 data NodeInfo k p a = NodeInfo
   { _nodeInfo_from :: !(From k p a)
   -- ^ Change applying to the current key, be it an insert, move, or delete.
-  , _nodeInfo_to :: !(To k p a)
+  , _nodeInfo_to :: !(To k)
   -- ^ Where this key is moving to, if involved in a move. Should only be
   -- @ComposeMaybe (Just k)@ when there is a corresponding 'From_Move'.
   }
@@ -167,31 +168,18 @@ instance Cat.Category p => Cat.Category (Flip (p :: k -> k -> *)) where
 -- | The "to" part of a 'NodeInfo'. Rather than be built out of @From@ like @From@
 -- is, we store just the information necessary to compose a @To@ and @From@ like
 -- @oLocal@ composes two @From@s.
-data To (k :: a -> *) (p :: a -> a -> *) :: a -> * where
+data To (k :: a -> *) where
   -- | Delete or leave in place
-  To_NonMove :: To k p from
+  To_NonMove :: To k
   -- | Move the value from the given key @k a@ to this key. The target key
   -- should also have an entry in the patch giving the current key in
   -- @_nodeInfo_from@, usually but not necessarily with @To_Delete@.
-  To_Move :: !(Some k) -> To k p from
+  To_Move :: !(Some k) -> To k
 
-deriving instance ( Show (k a), GShow k
-                  , Has' Show k (p a)
-                  , Show (PatchTarget1 p a)
-                  ) => Show (To k p a)
-deriving instance ( Read (k a), GRead k
-                  , Has' Read k (p a)
-                  , Read (PatchTarget1 p a)
-                  ) => Read (To k p a)
-deriving instance ( GEq k
-                  , Has' Eq k (p a)
-                  , Eq (PatchTarget1 p a)
-                  ) => Eq (To k p a)
-deriving instance ( GCompare k
-                  , Has' Eq k (p a) -- superclass bug
-                  , Has' Ord k (p a)
-                  , Ord (PatchTarget1 p a)
-                  ) => Ord (To k p a)
+deriving instance GShow k => Show (To k)
+deriving instance GRead k => Read (To k)
+deriving instance GEq k => Eq (To k)
+deriving instance GCompare k => Ord (To k)
 
 -- |Test whether a 'PatchDMapWithPatchingMove' satisfies its invariants.
 validPatchDMapWithPatchingMove
@@ -238,13 +226,13 @@ validationErrorsForPatchDMapWithPatchingMove m =
           Just $ "unbalanced move at source key " <> gshow src <> " supposedly going to " <> gshow dst <> " but destination key is not moving"
     unbalancedMove _ = Nothing
 
--- |Higher kinded 2-tuple, identical to @Data.Functor.Product@ from base ≥ 4.9
-data Pair1 f g a = Pair1 (f a) (g a)
 
--- |Helper data structure used for composing patches using the monoid instance.
+data ToFrom k p a = ToFrom (To k) (From k p a)
+
+-- | Helper data structure used for composing patches using the monoid instance.
 data Fixup k p a
    = Fixup_Delete
-   | Fixup_Update (These (DSum k (From k p)) (To k p a))
+   | Fixup_Update (These (DSum k (From k p)) (To k))
 
 -- | Compose patches having the same effect as applying the patches in turn:
 -- @'applyAlways' (p <> q) == 'applyAlways' p . 'applyAlways' q@
@@ -258,13 +246,13 @@ instance forall k p
          => Semigroup (PatchDMapWithPatchingMove k p) where
   PatchDMapWithPatchingMove ma <> PatchDMapWithPatchingMove mb = PatchDMapWithPatchingMove m
     where
-      connections :: [DSum k (Pair1 (To k p) (From k p))]
+      connections :: [DSum k (ToFrom k p)]
       connections = DMap.toList $ DMap.intersectionWithKey
-        (\_ a b -> Pair1 (_nodeInfo_to a) (_nodeInfo_from b))
+        (\_ a b -> ToFrom (_nodeInfo_to a) (_nodeInfo_from b))
         ma
         mb
-      h :: DSum k (Pair1 (To k p) (From k p)) -> [DSum k (Fixup k p)]
-      h ((between :: k between) :=> Pair1 editAfter editBefore) = case (editAfter, editBefore) of
+      h :: DSum k (ToFrom k p) -> [DSum k (Fixup k p)]
+      h ((between :: k between) :=> ToFrom editAfter editBefore) = case (editAfter, editBefore) of
         (To_Move (Some (toAfter :: k after)), From_Move ((fromBefore :: k before) :=> Flip p) :: From k p between) ->
           --case toAfter `geq` fromBefore of
           --  Just Refl | Just Refl <- Cat.isId p0 ->
@@ -460,17 +448,13 @@ mapPatchDMapWithPatchingMove
 mapPatchDMapWithPatchingMove f g (PatchDMapWithPatchingMove m) =
   PatchDMapWithPatchingMove $ DMap.map (\ni -> NodeInfo
     { _nodeInfo_from = h $ _nodeInfo_from ni
-    , _nodeInfo_to = j $ _nodeInfo_to ni
+    , _nodeInfo_to = _nodeInfo_to ni
     }) m
   where h :: forall a. From k p a -> From k p' a
         h = \case
           From_Insert v -> From_Insert $ f v
           From_Delete -> From_Delete
           From_Move (k :=> Flip p) -> From_Move $ k :=> Flip (g p)
-        j :: forall a. To k p a -> To k p' a
-        j = \case
-          To_NonMove -> To_NonMove
-          To_Move (Some k) -> To_Move $ Some k
 
 -- | Traverse an effectful function @forall a. PatchTarget1 p a -> m (v ' a)@
 -- over the given patch, transforming @'PatchDMapWithPatchingMove' k v@ into @m
@@ -499,22 +483,18 @@ traversePatchDMapWithPatchingMoveWithKey
 traversePatchDMapWithPatchingMoveWithKey f g (PatchDMapWithPatchingMove m) =
   PatchDMapWithPatchingMove <$> DMap.traverseWithKey (\k ni -> NodeInfo
     <$> h k (_nodeInfo_from ni)
-    <*> j k (_nodeInfo_to ni)) m
+    <*> pure (_nodeInfo_to ni)) m
   where h :: forall a. k a -> From k p a -> m (From k p' a)
         h k = \case
           From_Insert v -> From_Insert <$> f k v
           From_Delete -> pure From_Delete
           From_Move (fromKey :=> Flip p) -> From_Move . (fromKey :=>) . Flip <$> g fromKey k p
-        j :: forall a. k a -> To k p a -> m (To k p' a)
-        j _ = \case
-          To_NonMove -> pure To_NonMove
-          To_Move (Some toKey) -> pure $ To_Move $ Some toKey
 
 -- | Map a function which transforms @'From k PatchTarget1 p a@ into a @'From k
 -- PatchTarget1 p' a@ over a @'NodeInfo' k PatchTarget1 p a@.
 nodeInfoMapFrom
   :: (From k p a -> From k p' a)
-  -> (To k p a -> To k p' a)
+  -> (To k -> To k)
   -> NodeInfo k p a
   -> NodeInfo k p' a
 nodeInfoMapFrom f g ni = NodeInfo
@@ -527,7 +507,7 @@ nodeInfoMapFrom f g ni = NodeInfo
 nodeInfoMapFromM
   :: Applicative f
   => (From k p a -> f (From k p' a))
-  -> (To k p a -> f (To k p' a))
+  -> (To k -> f (To k))
   -> NodeInfo k p a
   -> f (NodeInfo k p' a)
 nodeInfoMapFromM f g ni = NodeInfo
@@ -639,6 +619,6 @@ getDeletionsAndMoves
      )
   => PatchDMapWithPatchingMove k p
   -> DMap k (PatchSource1 p)
-  -> DMap k (Product (PatchTarget1 p) (To k p))
+  -> DMap k (Product (PatchTarget1 p) (Const (To k)))
 getDeletionsAndMoves (PatchDMapWithPatchingMove p) m = DMap.intersectionWithKey f m p
-  where f _ v ni = Pair v $ _nodeInfo_to ni
+  where f _ v ni = Pair v $ Const $ _nodeInfo_to ni
