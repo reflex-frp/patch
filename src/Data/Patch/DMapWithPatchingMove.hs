@@ -230,7 +230,7 @@ validationErrorsForPatchDMapWithPatchingMove m =
 data ToFrom k p a = ToFrom (To k) (From k p a)
 
 -- | Helper data structure used for composing patches using the monoid instance.
-data Fixup k p a
+data Fixup k p
    = Fixup_Delete
    | Fixup_Update (These (DSum k (From k p)) (To k))
 
@@ -251,42 +251,42 @@ instance forall k p
         (\_ a b -> ToFrom (_nodeInfo_to a) (_nodeInfo_from b))
         ma
         mb
-      h :: DSum k (ToFrom k p) -> [DSum k (Fixup k p)]
+      h :: DSum k (ToFrom k p) -> [DSum k (Const (Fixup k p))]
       h ((between :: k between) :=> ToFrom editAfter editBefore) = case (editAfter, editBefore) of
         (To_Move (Some (toAfter :: k after)), From_Move ((fromBefore :: k before) :=> Flip p) :: From k p between) ->
           --case toAfter `geq` fromBefore of
           --  Just Refl | Just Refl <- Cat.isId p0 ->
           --    [ toAfter :=> Fixup_Delete ]
           --  _ ->
-              [ toAfter :=> Fixup_Update (This $ between :=> From_Move (fromBefore :=> Flip p))
-              , fromBefore :=> Fixup_Update (That $ To_Move $ Some toAfter)
+              [ toAfter :=> Const (Fixup_Update $ This $ between :=> From_Move (fromBefore :=> Flip p))
+              , fromBefore :=> Const (Fixup_Update $ That $ To_Move $ Some toAfter)
               ]
         (To_NonMove, From_Move (fromBefore :=> _)) ->
           -- The item is destroyed in the second patch, so indicate that it is
           -- destroyed in the source map
-          [fromBefore :=> Fixup_Update (That To_NonMove)]
+          [fromBefore :=> Const ( Fixup_Update $ That To_NonMove)]
         --(To_Move (Some toAfter), From_Insert val) ->
         --  [toAfter :=> Fixup_Update (This $ From_Insert $ applyAlwaysHet2 p val)]
         --(To_Move (Some toAfter), From_Delete) ->
         --  [toAfter :=> Fixup_Update (This From_Delete)]
         (To_Move (Some toAfter), _) ->
-          [toAfter :=> Fixup_Update (This $ between :=> editBefore)]
+          [toAfter :=> Const (Fixup_Update $ This $ between :=> editBefore)]
         (To_NonMove, _) ->
           []
-      mergeFixups _ Fixup_Delete Fixup_Delete = Fixup_Delete
-      mergeFixups _ (Fixup_Update a) (Fixup_Update b)
+      mergeFixups _ (Const Fixup_Delete) (Const Fixup_Delete) = Const $ Fixup_Delete
+      mergeFixups _ (Const (Fixup_Update a)) (Const (Fixup_Update b))
         | This x <- a, That y <- b
-        = Fixup_Update $ These x y
+        = Const $ Fixup_Update $ These x y
         | That y <- a, This x <- b
-        = Fixup_Update $ These x y
+        = Const $ Fixup_Update $ These x y
       mergeFixups _ _ _ = error "PatchDMapWithPatchingMove: incompatible fixups"
       fixups = DMap.fromListWithKey mergeFixups $ concatMap h connections
       combineNodeInfos _ nia nib = NodeInfo
         { _nodeInfo_from = _nodeInfo_from nia
         , _nodeInfo_to = _nodeInfo_to nib
         }
-      applyFixup :: k a -> NodeInfo k p a -> Fixup k p a -> Maybe (NodeInfo k p a)
-      applyFixup _ ni = \case
+      applyFixup :: k a -> NodeInfo k p a -> Const (Fixup k p) a -> Maybe (NodeInfo k p a)
+      applyFixup _ ni (Const fixup) = case fixup of
         Fixup_Delete -> Nothing
         Fixup_Update u -> Just $ NodeInfo
           { _nodeInfo_from = case _nodeInfo_from ni of
