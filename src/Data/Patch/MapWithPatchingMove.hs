@@ -17,10 +17,8 @@ module Data.Patch.MapWithPatchingMove where
 
 import Data.Patch.Class
 
-import Control.Arrow
+import Control.Lens hiding (from, to)
 import Control.Lens.TH (makeWrapped)
-import Control.Monad.Trans.State
-import Data.Foldable
 import Data.Function
 import Data.List
 import Data.Map (Map)
@@ -30,9 +28,9 @@ import Data.Maybe
 import Data.Semigroup (Semigroup (..))
 #endif
 import Data.Monoid.DecidablyEmpty
-import qualified Data.Set as Set
+import Data.Patch.MapWithMove (PatchMapWithMove (..))
+import qualified Data.Patch.MapWithMove as MapWithMove
 import Data.These (These (..))
-import Data.Tuple
 
 -- | Patch a Map with additions, deletions, and moves.  Invariant: If key @k1@
 -- is coming from @From_Move k2@, then key @k2@ should be going to @Just k1@,
@@ -249,39 +247,20 @@ patchThatChangesAndSortsMapWith cmp oldByIndex newByIndexUnsorted = patchThatCha
 
 -- | Create a 'PatchMapWithPatchingMove' that, if applied to the first 'Map' provided,
 -- will produce the second 'Map'.
+-- Note: this will never produce a patch on a value.
 patchThatChangesMap
   :: (Ord k, Ord (PatchTarget p), Monoid p)
   => Map k (PatchTarget p) -> Map k (PatchTarget p) -> PatchMapWithPatchingMove k p
-patchThatChangesMap oldByIndex newByIndex = patch
-  where oldByValue = Map.fromListWith Set.union $ swap . first Set.singleton <$> Map.toList oldByIndex
-        (insertsAndMoves, unusedValuesByValue) = flip runState oldByValue $ do
-          let f k v = do
-                remainingValues <- get
-                let putRemainingKeys remainingKeys = put $ if Set.null remainingKeys
-                      then Map.delete v remainingValues
-                      else Map.insert v remainingKeys remainingValues
-                case Map.lookup v remainingValues of
-                  Nothing -> return $ NodeInfo (From_Insert v) $ Just undefined -- There's no existing value we can take
-                  Just fromKs ->
-                    if k `Set.member` fromKs
-                    then do
-                      putRemainingKeys $ Set.delete k fromKs
-                      return $ NodeInfo (From_Move k mempty) $ Just undefined -- There's an existing value, and it's here, so no patch necessary
-                    else do
-                      (fromK, remainingKeys) <- return $
-                        fromMaybe (error "PatchMapWithPatchingMove.patchThatChangesMap: impossible: fromKs was empty") $
-                        Set.minView fromKs -- There's an existing value, but it's not here; move it here
-                      putRemainingKeys remainingKeys
-                      return $ NodeInfo (From_Move fromK mempty) $ Just undefined
-          Map.traverseWithKey f newByIndex
-        unusedOldKeys = fold unusedValuesByValue
-        pointlessMove k = \case
-          From_Move k' _ | k == k' -> True
-          _ -> False
-        keyWasMoved k = if k `Map.member` oldByIndex && not (k `Set.member` unusedOldKeys)
-          then Just undefined
-          else Nothing
-        patch = unsafePatchMapWithPatchingMove $ Map.filterWithKey (\k -> not . pointlessMove k . _nodeInfo_from) $ Map.mergeWithKey (\k a _ -> Just $ nodeInfoSetTo (keyWasMoved k) a) (Map.mapWithKey $ \k -> nodeInfoSetTo $ keyWasMoved k) (Map.mapWithKey $ \k _ -> NodeInfo From_Delete $ keyWasMoved k) insertsAndMoves oldByIndex
+patchThatChangesMap oldByIndex newByIndex = fromMapWithMove $ MapWithMove.patchThatChangesMap oldByIndex newByIndex
+
+fromMapWithMove :: Monoid p => PatchMapWithMove k (PatchTarget p) -> PatchMapWithPatchingMove k p
+fromMapWithMove p = PatchMapWithPatchingMove $ unPatchMapWithMove p <&> \n -> NodeInfo
+  { _nodeInfo_from = case MapWithMove._nodeInfo_from n of
+      MapWithMove.From_Insert v -> From_Insert v
+      MapWithMove.From_Delete -> From_Delete
+      MapWithMove.From_Move k -> From_Move k mempty
+  , _nodeInfo_to = MapWithMove._nodeInfo_to n
+  }
 
 -- | Change the 'From' value of a 'NodeInfo'
 nodeInfoMapFrom
