@@ -220,8 +220,8 @@ moveDMapKey src dst = case src `geq` dst of
 -- @
 --     let aMay = DMap.lookup a dmap
 --         bMay = DMap.lookup b dmap
---     in maybe id (DMap.insert a) (bMay `mplus` aMay)
---      . maybe id (DMap.insert b) (aMay `mplus` bMay)
+--     in maybe id (DMap.insert a) (bMay <> aMay)
+--      . maybe id (DMap.insert b) (aMay <> bMay)
 --      . DMap.delete a . DMap.delete b $ dmap
 -- @
 swapDMapKey :: GCompare k => k a -> k a -> PatchDMapWithMove k v
