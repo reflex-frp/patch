@@ -137,7 +137,7 @@ instance TraversableWithIndex k (PatchMapWithMove k) where
 
 -- | Create a 'PatchMapWithMove', validating it
 patchMapWithMove :: Ord k => Map k (NodeInfo k v) -> Maybe (PatchMapWithMove k v)
-patchMapWithMove = fmap coerce . PM.patchMapWithPatchingMove . coerce
+patchMapWithMove = fmap PatchMapWithMove' . PM.patchMapWithPatchingMove . coerce
 
 -- | Create a 'PatchMapWithMove' that inserts everything in the given 'Map'
 patchMapWithMoveInsertAll :: Map k v -> PatchMapWithMove k v
@@ -175,7 +175,7 @@ deleteMapKey = PatchMapWithMove' . PM.deleteMapKey
 --
 -- __Warning:__ when using this function, you must ensure that the invariants of 'PatchMapWithMove' are preserved; they will not be checked.
 unsafePatchMapWithMove :: Map k (NodeInfo k v) -> PatchMapWithMove k v
-unsafePatchMapWithMove = PatchMapWithMove' . PM.unsafePatchMapWithPatchingMove . coerce
+unsafePatchMapWithMove = coerce PM.unsafePatchMapWithPatchingMove
 
 -- | Apply the insertions, deletions, and moves to a given 'Map'
 instance Ord k => Patch (PatchMapWithMove k v) where
@@ -199,7 +199,7 @@ patchThatSortsMapWith cmp = PatchMapWithMove' . PM.patchThatSortsMapWith cmp
 -- | Create a 'PatchMapWithMove' that, if applied to the first 'Map' provided,
 -- will produce a 'Map' with the same values as the second 'Map' but with the
 -- values sorted with the given ordering function.
-patchThatChangesAndSortsMapWith :: forall k v. (Ord k, Ord v) => (v -> v -> Ordering) -> Map k v -> Map k v -> PatchMapWithMove k v
+patchThatChangesAndSortsMapWith :: (Ord k, Ord v) => (v -> v -> Ordering) -> Map k v -> Map k v -> PatchMapWithMove k v
 patchThatChangesAndSortsMapWith cmp oldByIndex newByIndexUnsorted = patchThatChangesMap oldByIndex newByIndex
   where newList = Map.toList newByIndexUnsorted
         newByIndex = Map.fromList $ zip (fst <$> newList) $ sortBy cmp $ snd <$> newList
@@ -255,13 +255,13 @@ bitraverseNodeInfo
   => (k0 -> f k1)
   -> (v0 -> f v1)
   -> NodeInfo k0 v0 -> f (NodeInfo k1 v1)
-bitraverseNodeInfo fk fv = fmap coerce
+bitraverseNodeInfo fk fv = fmap NodeInfo'
   . PM.bitraverseNodeInfo fk (\ ~Proxy -> pure Proxy) fv
   . coerce
 
 -- | Change the 'From' value of a 'NodeInfo'
 nodeInfoMapFrom :: (From k v -> From k v) -> NodeInfo k v -> NodeInfo k v
-nodeInfoMapFrom f = coerce . PM.nodeInfoMapFrom (unFrom' . f . From') . coerce
+nodeInfoMapFrom f = coerce $ PM.nodeInfoMapFrom (unFrom' . f . From')
 
 -- | Change the 'From' value of a 'NodeInfo', using a 'Functor' (or
 -- 'Applicative', 'Monad', etc.) action to get the new value
@@ -269,7 +269,7 @@ nodeInfoMapMFrom
   :: Functor f
   => (From k v -> f (From k v))
   -> NodeInfo k v -> f (NodeInfo k v)
-nodeInfoMapMFrom f = fmap coerce
+nodeInfoMapMFrom f = fmap NodeInfo'
   . PM.nodeInfoMapMFrom (fmap unFrom' . f . From')
   . coerce
 
@@ -303,7 +303,7 @@ bitraverseFrom
   => (k0 -> f k1)
   -> (v0 -> f v1)
   -> From k0 v0 -> f (From k1 v1)
-bitraverseFrom fk fv = fmap coerce
+bitraverseFrom fk fv = fmap From'
   . PM.bitraverseFrom fk (\ ~Proxy -> pure Proxy) fv
   . coerce
 
