@@ -74,10 +74,12 @@ data Changed a
 
 instance Applicative Changed where
   pure = Unchanged
+#if MIN_VERSION_base(4,10,0)
   liftA2 f (Changed x) (Changed y) = Changed (f x y)
   liftA2 f (Unchanged x) (Changed y) = Changed (f x y)
   liftA2 f (Changed x) (Unchanged y) = Changed (f x y)
   liftA2 f (Unchanged x) (Unchanged y) = Unchanged (f x y)
+#endif
 
 instance FunctorWithIndex k (PatchMap k)
 instance FoldableWithIndex k (PatchMap k)
