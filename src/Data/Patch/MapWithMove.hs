@@ -1,82 +1,151 @@
-{-# LANGUAGE DeriveFoldable #-}
-{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE ViewPatterns #-}
+
 -- | 'Patch'es on 'Map' that can insert, delete, and move values from one key to
 -- another
-module Data.Patch.MapWithMove where
+module Data.Patch.MapWithMove
+  ( PatchMapWithMove
+    ( PatchMapWithMove
+    , unPatchMapWithMove
+    , ..
+    )
+  , patchMapWithMove
+  , patchMapWithMoveInsertAll
+  , insertMapKey
+  , moveMapKey
+  , swapMapKey
+  , deleteMapKey
+  , unsafePatchMapWithMove
+  , patchMapWithMoveNewElements
+  , patchMapWithMoveNewElementsMap
+  , patchThatSortsMapWith
+  , patchThatChangesAndSortsMapWith
+  , patchThatChangesMap
 
+  -- * Node Info
+  , NodeInfo
+    ( NodeInfo
+    , _nodeInfo_to
+    , _nodeInfo_from
+    , ..
+    )
+  , bitraverseNodeInfo
+  , nodeInfoMapFrom
+  , nodeInfoMapMFrom
+  , nodeInfoSetTo
+
+  -- * From
+  , From
+    ( From_Insert
+    , From_Delete
+    , From_Move
+    , ..
+    )
+  , bitraverseFrom
+
+  -- * To
+  , To
+  ) where
+
+import Data.Coerce
+import Data.Kind (Type)
 import Data.Patch.Class
+import Data.Patch.MapWithPatchingMove (PatchMapWithPatchingMove(..), To)
+import qualified Data.Patch.MapWithPatchingMove as PM -- already a transparent synonym
 
-import Control.Arrow
-import Control.Monad.Trans.State
-import Data.Foldable
-import Data.Function
+import Control.Lens
 import Data.List
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Data.Maybe
-import Data.Semigroup (Semigroup (..), (<>))
-import qualified Data.Set as Set
-import Data.These (These(..))
-import Data.Tuple
+import Data.Proxy
+#if !MIN_VERSION_base(4,11,0)
+import Data.Semigroup (Semigroup (..))
+#endif
+import Data.Traversable (foldMapDefault)
 
--- | Patch a DMap with additions, deletions, and moves.  Invariant: If key @k1@
+-- | Patch a Map with additions, deletions, and moves.  Invariant: If key @k1@
 -- is coming from @From_Move k2@, then key @k2@ should be going to @Just k1@,
 -- and vice versa.  There should never be any unpaired From/To keys.
-newtype PatchMapWithMove k v = PatchMapWithMove (Map k (NodeInfo k v)) deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
-
--- | Holds the information about each key: where its new value should come from,
--- and where its old value should go to
-data NodeInfo k v = NodeInfo
-  { _nodeInfo_from :: !(From k v)
-    -- ^ Where do we get the new value for this key?
-  , _nodeInfo_to :: !(To k)
-    -- ^ If the old value is being kept (i.e. moved rather than deleted or
-    -- replaced), where is it going?
+newtype PatchMapWithMove k (v :: Type) = PatchMapWithMove'
+  { -- | Extract the underlying 'PatchMapWithPatchingMove k (Proxy v)'
+    unPatchMapWithMove' :: PatchMapWithPatchingMove k (Proxy v)
   }
-  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable)
+  deriving ( Show, Read, Eq, Ord
+-- Haddock cannot handle documentation here before GHC 8.6
+           ,
+#if __GLASGOW_HASKELL__ >= 806
+             -- | Compose patches having the same effect as applying the
+             -- patches in turn: @'applyAlways' (p <> q) == 'applyAlways' p .
+             -- 'applyAlways' q@
+#endif
+             Semigroup
+           , Monoid
+           )
 
--- | Describe how a key's new value should be produced
-data From k v
-   = From_Insert v -- ^ Insert the given value here
-   | From_Delete -- ^ Delete the existing value, if any, from here
-   | From_Move !k -- ^ Move the value here from the given key
-   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable)
+pattern Coerce :: Coercible a b => a -> b
+pattern Coerce x <- (coerce -> x)
+  where Coerce x = coerce x
 
--- | Describe where a key's old value will go.  If this is 'Just', that means
--- the key's old value will be moved to the given other key; if it is 'Nothing',
--- that means it will be deleted.
-type To = Maybe
+{-# COMPLETE PatchMapWithMove #-}
+pattern PatchMapWithMove :: Map k (NodeInfo k v) -> PatchMapWithMove k v
+-- | Extract the representation of the 'PatchMapWithMove' as a map of
+-- 'NodeInfo'.
+unPatchMapWithMove :: PatchMapWithMove k v -> Map k (NodeInfo k v)
+pattern PatchMapWithMove { unPatchMapWithMove } = PatchMapWithMove' (PatchMapWithPatchingMove (Coerce unPatchMapWithMove))
+
+_PatchMapWithMove
+  :: Iso
+       (PatchMapWithMove k0 v0)
+       (PatchMapWithMove k1 v1)
+       (Map k0 (NodeInfo k0 v0))
+       (Map k1 (NodeInfo k1 v1))
+_PatchMapWithMove = iso unPatchMapWithMove PatchMapWithMove
+
+instance Functor (PatchMapWithMove k) where
+  fmap f = runIdentity . traverse (Identity . f)
+
+instance Foldable (PatchMapWithMove k) where
+  foldMap = foldMapDefault
+
+instance Traversable (PatchMapWithMove k) where
+  traverse =
+    _PatchMapWithMove .
+    traverse .
+    traverse
+
+instance FunctorWithIndex k (PatchMapWithMove k)
+instance FoldableWithIndex k (PatchMapWithMove k)
+instance TraversableWithIndex k (PatchMapWithMove k) where
+  itraverse = itraversed . Indexed
+  itraversed =
+    _PatchMapWithMove .>
+    itraversed <.
+    traverse
 
 -- | Create a 'PatchMapWithMove', validating it
 patchMapWithMove :: Ord k => Map k (NodeInfo k v) -> Maybe (PatchMapWithMove k v)
-patchMapWithMove m = if valid then Just $ PatchMapWithMove m else Nothing
-  where valid = forwardLinks == backwardLinks
-        forwardLinks = Map.mapMaybe _nodeInfo_to m
-        backwardLinks = Map.fromList $ catMaybes $ flip fmap (Map.toList m) $ \(to, v) ->
-          case _nodeInfo_from v of
-            From_Move from -> Just (from, to)
-            _ -> Nothing
+patchMapWithMove = fmap PatchMapWithMove' . PM.patchMapWithPatchingMove . coerce
 
 -- | Create a 'PatchMapWithMove' that inserts everything in the given 'Map'
 patchMapWithMoveInsertAll :: Map k v -> PatchMapWithMove k v
-patchMapWithMoveInsertAll m = PatchMapWithMove $ flip fmap m $ \v -> NodeInfo
-  { _nodeInfo_from = From_Insert v
-  , _nodeInfo_to = Nothing
-  }
-
--- | Extract the internal representation of the 'PatchMapWithMove'
-unPatchMapWithMove :: PatchMapWithMove k v -> Map k (NodeInfo k v)
-unPatchMapWithMove (PatchMapWithMove p) = p
+patchMapWithMoveInsertAll = PatchMapWithMove' . PM.patchMapWithPatchingMoveInsertAll
 
 -- | Make a @'PatchMapWithMove' k v@ which has the effect of inserting or updating a value @v@ to the given key @k@, like 'Map.insert'.
 insertMapKey :: k -> v -> PatchMapWithMove k v
-insertMapKey k v = PatchMapWithMove . Map.singleton k $ NodeInfo (From_Insert v) Nothing
+insertMapKey k v = PatchMapWithMove' $ PM.insertMapKey k v
 
 -- |Make a @'PatchMapWithMove' k v@ which has the effect of moving the value from the first key @k@ to the second key @k@, equivalent to:
 --
@@ -84,84 +153,53 @@ insertMapKey k v = PatchMapWithMove . Map.singleton k $ NodeInfo (From_Insert v)
 --     'Map.delete' src (maybe map ('Map.insert' dst) (Map.lookup src map))
 -- @
 moveMapKey :: Ord k => k -> k -> PatchMapWithMove k v
-moveMapKey src dst
-  | src == dst = mempty
-  | otherwise =
-      PatchMapWithMove $ Map.fromList
-        [ (dst, NodeInfo (From_Move src) Nothing)
-        , (src, NodeInfo From_Delete (Just dst))
-        ]
+moveMapKey src dst = PatchMapWithMove' $ PM.moveMapKey src dst
 
 -- |Make a @'PatchMapWithMove' k v@ which has the effect of swapping two keys in the mapping, equivalent to:
 --
 -- @
 --     let aMay = Map.lookup a map
 --         bMay = Map.lookup b map
---     in maybe id (Map.insert a) (bMay `mplus` aMay)
---      . maybe id (Map.insert b) (aMay `mplus` bMay)
+--     in maybe id (Map.insert a) (bMay <> aMay)
+--      . maybe id (Map.insert b) (aMay <> bMay)
 --      . Map.delete a . Map.delete b $ map
 -- @
 swapMapKey :: Ord k => k -> k -> PatchMapWithMove k v
-swapMapKey src dst
-  | src == dst = mempty
-  | otherwise =
-    PatchMapWithMove $ Map.fromList
-      [ (dst, NodeInfo (From_Move src) (Just src))
-      , (src, NodeInfo (From_Move dst) (Just dst))
-      ]
+swapMapKey src dst = PatchMapWithMove' $ PM.swapMapKey src dst
 
 -- |Make a @'PatchMapWithMove' k v@ which has the effect of deleting a key in the mapping, equivalent to 'Map.delete'.
 deleteMapKey :: k -> PatchMapWithMove k v
-deleteMapKey k = PatchMapWithMove . Map.singleton k $ NodeInfo From_Delete Nothing
+deleteMapKey = PatchMapWithMove' . PM.deleteMapKey
 
 -- | Wrap a @'Map' k (NodeInfo k v)@ representing patch changes into a @'PatchMapWithMove' k v@, without checking any invariants.
 --
 -- __Warning:__ when using this function, you must ensure that the invariants of 'PatchMapWithMove' are preserved; they will not be checked.
 unsafePatchMapWithMove :: Map k (NodeInfo k v) -> PatchMapWithMove k v
-unsafePatchMapWithMove = PatchMapWithMove
+unsafePatchMapWithMove = coerce PM.unsafePatchMapWithPatchingMove
 
 -- | Apply the insertions, deletions, and moves to a given 'Map'
 instance Ord k => Patch (PatchMapWithMove k v) where
   type PatchTarget (PatchMapWithMove k v) = Map k v
-  apply (PatchMapWithMove p) old = Just $! insertions `Map.union` (old `Map.difference` deletions) --TODO: return Nothing sometimes --Note: the strict application here is critical to ensuring that incremental merges don't hold onto all their prerequisite events forever; can we make this more robust?
-    where insertions = flip Map.mapMaybeWithKey p $ \_ ni -> case _nodeInfo_from ni of
-            From_Insert v -> Just v
-            From_Move k -> Map.lookup k old
-            From_Delete -> Nothing
-          deletions = flip Map.mapMaybeWithKey p $ \_ ni -> case _nodeInfo_from ni of
-            From_Delete -> Just ()
-            _ -> Nothing
+  apply (PatchMapWithMove' p) = apply p
 
 -- | Returns all the new elements that will be added to the 'Map'.
 patchMapWithMoveNewElements :: PatchMapWithMove k v -> [v]
-patchMapWithMoveNewElements = Map.elems . patchMapWithMoveNewElementsMap
+patchMapWithMoveNewElements = PM.patchMapWithPatchingMoveNewElements . unPatchMapWithMove'
 
 -- | Return a @'Map' k v@ with all the inserts/updates from the given @'PatchMapWithMove' k v@.
 patchMapWithMoveNewElementsMap :: PatchMapWithMove k v -> Map k v
-patchMapWithMoveNewElementsMap (PatchMapWithMove p) = Map.mapMaybe f p
-  where f ni = case _nodeInfo_from ni of
-          From_Insert v -> Just v
-          From_Move _ -> Nothing
-          From_Delete -> Nothing
+patchMapWithMoveNewElementsMap = PM.patchMapWithPatchingMoveNewElementsMap . unPatchMapWithMove'
 
 -- | Create a 'PatchMapWithMove' that, if applied to the given 'Map', will sort
 -- its values using the given ordering function.  The set keys of the 'Map' is
 -- not changed.
 patchThatSortsMapWith :: Ord k => (v -> v -> Ordering) -> Map k v -> PatchMapWithMove k v
-patchThatSortsMapWith cmp m = PatchMapWithMove $ Map.fromList $ catMaybes $ zipWith g unsorted sorted
-  where unsorted = Map.toList m
-        sorted = sortBy (cmp `on` snd) unsorted
-        f (to, _) (from, _) = if to == from then Nothing else
-          Just (from, to)
-        reverseMapping = Map.fromList $ catMaybes $ zipWith f unsorted sorted
-        g (to, _) (from, _) = if to == from then Nothing else
-          let Just movingTo = Map.lookup to reverseMapping
-          in Just (to, NodeInfo (From_Move from) $ Just movingTo)
+patchThatSortsMapWith cmp = PatchMapWithMove' . PM.patchThatSortsMapWith cmp
 
 -- | Create a 'PatchMapWithMove' that, if applied to the first 'Map' provided,
 -- will produce a 'Map' with the same values as the second 'Map' but with the
 -- values sorted with the given ordering function.
-patchThatChangesAndSortsMapWith :: forall k v. (Ord k, Ord v) => (v -> v -> Ordering) -> Map k v -> Map k v -> PatchMapWithMove k v
+patchThatChangesAndSortsMapWith :: (Ord k, Ord v) => (v -> v -> Ordering) -> Map k v -> Map k v -> PatchMapWithMove k v
 patchThatChangesAndSortsMapWith cmp oldByIndex newByIndexUnsorted = patchThatChangesMap oldByIndex newByIndex
   where newList = Map.toList newByIndexUnsorted
         newByIndex = Map.fromList $ zip (fst <$> newList) $ sortBy cmp $ snd <$> newList
@@ -169,102 +207,106 @@ patchThatChangesAndSortsMapWith cmp oldByIndex newByIndexUnsorted = patchThatCha
 -- | Create a 'PatchMapWithMove' that, if applied to the first 'Map' provided,
 -- will produce the second 'Map'.
 patchThatChangesMap :: (Ord k, Ord v) => Map k v -> Map k v -> PatchMapWithMove k v
-patchThatChangesMap oldByIndex newByIndex = patch
-  where oldByValue = Map.fromListWith Set.union $ swap . first Set.singleton <$> Map.toList oldByIndex
-        (insertsAndMoves, unusedValuesByValue) = flip runState oldByValue $ do
-          let f k v = do
-                remainingValues <- get
-                let putRemainingKeys remainingKeys = put $ if Set.null remainingKeys
-                      then Map.delete v remainingValues
-                      else Map.insert v remainingKeys remainingValues
-                case Map.lookup v remainingValues of
-                  Nothing -> return $ NodeInfo (From_Insert v) $ Just undefined -- There's no existing value we can take
-                  Just fromKs ->
-                    if k `Set.member` fromKs
-                    then do
-                      putRemainingKeys $ Set.delete k fromKs
-                      return $ NodeInfo (From_Move k) $ Just undefined -- There's an existing value, and it's here, so no patch necessary
-                    else do
-                      (fromK, remainingKeys) <- return . fromJust $ Set.minView fromKs -- There's an existing value, but it's not here; move it here
-                      putRemainingKeys remainingKeys
-                      return $ NodeInfo (From_Move fromK) $ Just undefined
-          Map.traverseWithKey f newByIndex
-        unusedOldKeys = fold unusedValuesByValue
-        pointlessMove k = \case
-          From_Move k' | k == k' -> True
-          _ -> False
-        keyWasMoved k = if k `Map.member` oldByIndex && not (k `Set.member` unusedOldKeys)
-          then Just undefined
-          else Nothing
-        patch = unsafePatchMapWithMove $ Map.filterWithKey (\k -> not . pointlessMove k . _nodeInfo_from) $ Map.mergeWithKey (\k a _ -> Just $ nodeInfoSetTo (keyWasMoved k) a) (Map.mapWithKey $ \k -> nodeInfoSetTo $ keyWasMoved k) (Map.mapWithKey $ \k _ -> NodeInfo From_Delete $ keyWasMoved k) insertsAndMoves oldByIndex
+patchThatChangesMap oldByIndex newByIndex = PatchMapWithMove' $
+  PM.patchThatChangesMap oldByIndex newByIndex
+
+--
+-- NodeInfo
+--
+
+-- | Holds the information about each key: where its new value should come from,
+-- and where its old value should go to
+newtype NodeInfo k (v :: Type) = NodeInfo' { unNodeInfo' :: PM.NodeInfo k (Proxy v) }
+
+deriving instance (Show k, Show p) => Show (NodeInfo k p)
+deriving instance (Read k, Read p) => Read (NodeInfo k p)
+deriving instance (Eq k, Eq p) => Eq (NodeInfo k p)
+deriving instance (Ord k, Ord p) => Ord (NodeInfo k p)
+
+{-# COMPLETE NodeInfo #-}
+pattern NodeInfo :: To k -> From k v -> NodeInfo k v
+_nodeInfo_to :: NodeInfo k v -> To k
+_nodeInfo_from :: NodeInfo k v -> From k v
+pattern NodeInfo { _nodeInfo_to, _nodeInfo_from } = NodeInfo'
+  PM.NodeInfo
+    { PM._nodeInfo_to = _nodeInfo_to
+    , PM._nodeInfo_from = Coerce _nodeInfo_from
+    }
+
+_NodeInfo
+  :: Iso
+       (NodeInfo k0 v0)
+       (NodeInfo k1 v1)
+       (PM.NodeInfo k0 (Proxy v0))
+       (PM.NodeInfo k1 (Proxy v1))
+_NodeInfo = iso unNodeInfo' NodeInfo'
+
+instance Functor (NodeInfo k) where
+  fmap f = runIdentity . traverse (Identity . f)
+
+instance Foldable (NodeInfo k) where
+  foldMap = foldMapDefault
+
+instance Traversable (NodeInfo k) where
+  traverse = bitraverseNodeInfo pure
+
+bitraverseNodeInfo
+  :: Applicative f
+  => (k0 -> f k1)
+  -> (v0 -> f v1)
+  -> NodeInfo k0 v0 -> f (NodeInfo k1 v1)
+bitraverseNodeInfo fk fv = fmap NodeInfo'
+  . PM.bitraverseNodeInfo fk (\ ~Proxy -> pure Proxy) fv
+  . coerce
 
 -- | Change the 'From' value of a 'NodeInfo'
 nodeInfoMapFrom :: (From k v -> From k v) -> NodeInfo k v -> NodeInfo k v
-nodeInfoMapFrom f ni = ni { _nodeInfo_from = f $ _nodeInfo_from ni }
+nodeInfoMapFrom f = coerce $ PM.nodeInfoMapFrom (unFrom' . f . From')
 
 -- | Change the 'From' value of a 'NodeInfo', using a 'Functor' (or
 -- 'Applicative', 'Monad', etc.) action to get the new value
-nodeInfoMapMFrom :: Functor f => (From k v -> f (From k v)) -> NodeInfo k v -> f (NodeInfo k v)
-nodeInfoMapMFrom f ni = fmap (\result -> ni { _nodeInfo_from = result }) $ f $ _nodeInfo_from ni
+nodeInfoMapMFrom
+  :: Functor f
+  => (From k v -> f (From k v))
+  -> NodeInfo k v -> f (NodeInfo k v)
+nodeInfoMapMFrom f = fmap NodeInfo'
+  . PM.nodeInfoMapMFrom (fmap unFrom' . f . From')
+  . coerce
 
 -- | Set the 'To' field of a 'NodeInfo'
 nodeInfoSetTo :: To k -> NodeInfo k v -> NodeInfo k v
-nodeInfoSetTo to ni = ni { _nodeInfo_to = to }
+nodeInfoSetTo = coerce . PM.nodeInfoSetTo
 
--- |Helper data structure used for composing patches using the monoid instance.
-data Fixup k v
-   = Fixup_Delete
-   | Fixup_Update (These (From k v) (To k))
+--
+-- From
+--
 
--- |Compose patches having the same effect as applying the patches in turn: @'applyAlways' (p <> q) == 'applyAlways' p . 'applyAlways' q@
-instance Ord k => Semigroup (PatchMapWithMove k v) where
-  PatchMapWithMove ma <> PatchMapWithMove mb = PatchMapWithMove m
-    where
-      connections = Map.toList $ Map.intersectionWithKey (\_ a b -> (_nodeInfo_to a, _nodeInfo_from b)) ma mb
-      h :: (k, (Maybe k, From k v)) -> [(k, Fixup k v)]
-      h (_, (mToAfter, editBefore)) = case (mToAfter, editBefore) of
-        (Just toAfter, From_Move fromBefore)
-          | fromBefore == toAfter
-            -> [(toAfter, Fixup_Delete)]
-          | otherwise
-            -> [ (toAfter, Fixup_Update (This editBefore))
-               , (fromBefore, Fixup_Update (That mToAfter))
-               ]
-        (Nothing, From_Move fromBefore) -> [(fromBefore, Fixup_Update (That mToAfter))] -- The item is destroyed in the second patch, so indicate that it is destroyed in the source map
-        (Just toAfter, _) -> [(toAfter, Fixup_Update (This editBefore))]
-        (Nothing, _) -> []
-      mergeFixups _ Fixup_Delete Fixup_Delete = Fixup_Delete
-      mergeFixups _ (Fixup_Update a) (Fixup_Update b)
-        | This x <- a, That y <- b
-        = Fixup_Update $ These x y
-        | That y <- a, This x <- b
-        = Fixup_Update $ These x y
-      mergeFixups _ _ _ = error "PatchMapWithMove: incompatible fixups"
-      fixups = Map.fromListWithKey mergeFixups $ concatMap h connections
-      combineNodeInfos _ nia nib = NodeInfo
-        { _nodeInfo_from = _nodeInfo_from nia
-        , _nodeInfo_to = _nodeInfo_to nib
-        }
-      applyFixup _ ni = \case
-        Fixup_Delete -> Nothing
-        Fixup_Update u -> Just $ NodeInfo
-          { _nodeInfo_from = fromMaybe (_nodeInfo_from ni) $ getHere u
-          , _nodeInfo_to = fromMaybe (_nodeInfo_to ni) $ getThere u
-          }
-      m = Map.differenceWithKey applyFixup (Map.unionWithKey combineNodeInfos ma mb) fixups
-      getHere :: These a b -> Maybe a
-      getHere = \case
-        This a -> Just a
-        These a _ -> Just a
-        That _ -> Nothing
-      getThere :: These a b -> Maybe b
-      getThere = \case
-        This _ -> Nothing
-        These _ b -> Just b
-        That b -> Just b
+-- | Describe how a key's new value should be produced
+newtype From k (v :: Type) = From' { unFrom' :: PM.From k (Proxy v) }
 
---TODO: Figure out how to implement this in terms of PatchDMapWithMove rather than duplicating it here
--- |Compose patches having the same effect as applying the patches in turn: @'applyAlways' (p <> q) == 'applyAlways' p . 'applyAlways' q@
-instance Ord k => Monoid (PatchMapWithMove k v) where
-  mempty = PatchMapWithMove mempty
-  mappend = (<>)
+{-# COMPLETE From_Insert, From_Delete, From_Move #-}
+
+-- | Insert the given value here
+pattern From_Insert :: v -> From k v
+pattern From_Insert v = From' (PM.From_Insert v)
+
+-- | Delete the existing value, if any, from here
+pattern From_Delete :: From k v
+pattern From_Delete = From' PM.From_Delete
+
+-- | Move the value here from the given key
+pattern From_Move :: k -> From k v
+pattern From_Move k = From' (PM.From_Move k Proxy)
+
+bitraverseFrom
+  :: Applicative f
+  => (k0 -> f k1)
+  -> (v0 -> f v1)
+  -> From k0 v0 -> f (From k1 v1)
+bitraverseFrom fk fv = fmap From'
+  . PM.bitraverseFrom fk (\ ~Proxy -> pure Proxy) fv
+  . coerce
+
+makeWrapped ''PatchMapWithMove
+makeWrapped ''NodeInfo
+makeWrapped ''From

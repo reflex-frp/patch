@@ -20,17 +20,21 @@ import Data.Patch.MapWithMove (PatchMapWithMove (..))
 import qualified Data.Patch.MapWithMove as MapWithMove
 
 import Data.Constraint.Extras
-import Data.Dependent.Map (DMap, DSum (..), GCompare (..))
+import Data.Dependent.Map (DMap)
+import Data.Dependent.Sum (DSum (..))
 import qualified Data.Dependent.Map as DMap
 import Data.Functor.Constant
 import Data.Functor.Misc
 import Data.Functor.Product
-import Data.GADT.Compare (GEq (..))
+import Data.GADT.Compare (GEq (..), GCompare (..))
 import Data.GADT.Show (GShow, gshow)
 import qualified Data.Map as Map
 import Data.Maybe
-import Data.Semigroup (Semigroup (..), (<>))
-import Data.Some (Some(Some))
+import Data.Monoid.DecidablyEmpty
+#if !MIN_VERSION_base(4,11,0)
+import Data.Semigroup (Semigroup (..))
+#endif
+import Data.Some (Some, mkSome)
 import Data.These
 
 -- | Like 'PatchMapWithMove', but for 'DMap'. Each key carries a 'NodeInfo' which describes how it will be changed by the patch and connects move sources and
@@ -41,6 +45,10 @@ import Data.These
 --     * A key should not move to itself.
 --     * A move should always be represented with both the destination key (as a 'From_Move') and the source key (as a @'ComposeMaybe' ('Just' destination)@)
 newtype PatchDMapWithMove k v = PatchDMapWithMove (DMap k (NodeInfo k v))
+
+-- It won't let me derive for some reason
+instance GCompare k => DecidablyEmpty (PatchDMapWithMove k v) where
+  isEmpty (PatchDMapWithMove m) = DMap.null m
 
 -- |Structure which represents what changes apply to a particular key. @_nodeInfo_from@ specifies what happens to this key, and in particular what other key
 -- the current key is moving from, while @_nodeInfo_to@ specifies what key the current key is moving to if involved in a move.
@@ -212,8 +220,8 @@ moveDMapKey src dst = case src `geq` dst of
 -- @
 --     let aMay = DMap.lookup a dmap
 --         bMay = DMap.lookup b dmap
---     in maybe id (DMap.insert a) (bMay `mplus` aMay)
---      . maybe id (DMap.insert b) (aMay `mplus` bMay)
+--     in maybe id (DMap.insert a) (bMay <> aMay)
+--      . maybe id (DMap.insert b) (aMay <> bMay)
 --      . DMap.delete a . DMap.delete b $ dmap
 -- @
 swapDMapKey :: GCompare k => k a -> k a -> PatchDMapWithMove k v
@@ -310,8 +318,8 @@ weakenPatchDMapWithMoveWith f (PatchDMapWithMove p) = PatchMapWithMove $ weakenD
           { MapWithMove._nodeInfo_from = case _nodeInfo_from ni of
               From_Insert v -> MapWithMove.From_Insert $ f v
               From_Delete -> MapWithMove.From_Delete
-              From_Move k -> MapWithMove.From_Move $ Some k
-          , MapWithMove._nodeInfo_to = Some <$> getComposeMaybe (_nodeInfo_to ni)
+              From_Move k -> MapWithMove.From_Move $ mkSome k
+          , MapWithMove._nodeInfo_to = mkSome <$> getComposeMaybe (_nodeInfo_to ni)
           }
 
 -- |"Weaken" a @'PatchDMapWithMove' (Const2 k a) v@ to a @'PatchMapWithMove' k v'@. Weaken is in scare quotes because the 'Const2' has already disabled any

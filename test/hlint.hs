@@ -1,7 +1,7 @@
 module Main where
 
 import Control.Monad
-import Language.Haskell.HLint3 (hlint)
+import Language.Haskell.HLint (hlint)
 import System.Directory
 import System.Exit (exitFailure, exitSuccess)
 import System.FilePath
@@ -23,6 +23,7 @@ main = do
         , "--ignore=Reduce duplication"
         , "--cpp-define=USE_TEMPLATE_HASKELL"
         , "--ignore=Use tuple-section"
+        , "--ignore=Unused LANGUAGE pragma" -- hlint3 falsely believes that TypeOperators is not needed
         ]
       recurseInto = and <$> sequence
         [ fileType ==? Directory
