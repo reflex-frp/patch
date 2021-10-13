@@ -57,6 +57,19 @@ library
   ghc-options: -Wall -fwarn-redundant-constraints -fwarn-tabs
   default-extensions: PolyKinds
 
+test-suite tests
+  default-language: Haskell2010
+  type: exitcode-stdio-1.0
+  main-is: tests.hs
+  hs-source-dirs: test
+  build-depends: base
+               , patch
+               , containers
+               , hedgehog
+               , HUnit
+  if impl(ghcjs)
+    buildable: False
+
 test-suite hlint
   default-language: Haskell2010
   type: exitcode-stdio-1.0

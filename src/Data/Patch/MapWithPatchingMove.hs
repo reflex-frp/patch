@@ -13,14 +13,45 @@
 
 -- | 'Patch'es on 'Map' that can insert, delete, and move values from one key to
 -- another
-module Data.Patch.MapWithPatchingMove where
+module Data.Patch.MapWithPatchingMove
+  ( PatchMapWithPatchingMove (..)
+  , patchMapWithPatchingMove
+  , patchMapWithPatchingMoveInsertAll
+  , insertMapKey
+  , moveMapKey
+  , swapMapKey
+  , deleteMapKey
+  , unsafePatchMapWithPatchingMove
+  , patchMapWithPatchingMoveNewElements
+  , patchMapWithPatchingMoveNewElementsMap
+  , patchThatSortsMapWith
+  , patchThatChangesAndSortsMapWith
+  , patchThatChangesMap
+
+  -- * Node Info
+  , NodeInfo (..)
+  , bitraverseNodeInfo
+  , nodeInfoMapFrom
+  , nodeInfoMapMFrom
+  , nodeInfoSetTo
+
+  -- * From
+  , From(..)
+  , bitraverseFrom
+
+  -- * To
+  , To
+
+  -- TODO internals module
+  , Fixup (..)
+  ) where
 
 import Data.Patch.Class
 
-import Control.Arrow
+import Control.Lens hiding (from, to)
 import Control.Lens.TH (makeWrapped)
-import Control.Monad.Trans.State
-import Data.Foldable
+import Data.Align (align)
+import Data.Foldable (toList)
 import Data.Function
 import Data.List
 import Data.Map (Map)
@@ -30,9 +61,9 @@ import Data.Maybe
 import Data.Semigroup (Semigroup (..))
 #endif
 import Data.Monoid.DecidablyEmpty
+import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.These (These (..))
-import Data.Tuple
 
 -- | Patch a Map with additions, deletions, and moves.  Invariant: If key @k1@
 -- is coming from @From_Move k2@, then key @k2@ should be going to @Just k1@,
@@ -54,57 +85,6 @@ deriving instance ( Ord k
                   , DecidablyEmpty p
                   , Patch p
                   ) => DecidablyEmpty (PatchMapWithPatchingMove k p)
-
--- | Holds the information about each key: where its new value should come from,
--- and where its old value should go to
-data NodeInfo k p = NodeInfo
-  { _nodeInfo_from :: !(From k p)
-    -- ^ Where do we get the new value for this key?
-  , _nodeInfo_to :: !(To k)
-    -- ^ If the old value is being kept (i.e. moved rather than deleted or
-    -- replaced), where is it going?
-  }
-deriving instance (Show k, Show p, Show (PatchTarget p)) => Show (NodeInfo k p)
-deriving instance (Read k, Read p, Read (PatchTarget p)) => Read (NodeInfo k p)
-deriving instance (Eq k, Eq p, Eq (PatchTarget p)) => Eq (NodeInfo k p)
-deriving instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (NodeInfo k p)
-
-bitraverseNodeInfo
-  :: Applicative f
-  => (k0 -> f k1)
-  -> (p0 -> f p1)
-  -> (PatchTarget p0 -> f (PatchTarget p1))
-  -> NodeInfo k0 p0 -> f (NodeInfo k1 p1)
-bitraverseNodeInfo fk fp fpt (NodeInfo from to) = NodeInfo
-  <$> bitraverseFrom fk fp fpt from
-  <*> traverse fk to
-
--- | Describe how a key's new value should be produced
-data From k p
-   = From_Insert (PatchTarget p) -- ^ Insert the given value here
-   | From_Delete -- ^ Delete the existing value, if any, from here
-   | From_Move !k !p -- ^ Move the value here from the given key, and apply the given patch
-
-bitraverseFrom
-  :: Applicative f
-  => (k0 -> f k1)
-  -> (p0 -> f p1)
-  -> (PatchTarget p0 -> f (PatchTarget p1))
-  -> From k0 p0 -> f (From k1 p1)
-bitraverseFrom fk fp fpt = \case
-  From_Insert pt -> From_Insert <$> fpt pt
-  From_Delete -> pure From_Delete
-  From_Move k p -> From_Move <$> fk k <*> fp p
-
-deriving instance (Show k, Show p, Show (PatchTarget p)) => Show (From k p)
-deriving instance (Read k, Read p, Read (PatchTarget p)) => Read (From k p)
-deriving instance (Eq k, Eq p, Eq (PatchTarget p)) => Eq (From k p)
-deriving instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (From k p)
-
--- | Describe where a key's old value will go.  If this is 'Just', that means
--- the key's old value will be moved to the given other key; if it is 'Nothing',
--- that means it will be deleted.
-type To = Maybe
 
 -- | Create a 'PatchMapWithPatchingMove', validating it
 patchMapWithPatchingMove
@@ -156,8 +136,8 @@ moveMapKey src dst
 -- @
 --     let aMay = Map.lookup a map
 --         bMay = Map.lookup b map
---     in maybe id (Map.insert a) (bMay `mplus` aMay)
---      . maybe id (Map.insert b) (aMay `mplus` bMay)
+--     in maybe id (Map.insert a) (bMay <> aMay)
+--      . maybe id (Map.insert b) (aMay <> bMay)
 --      . Map.delete a . Map.delete b $ map
 -- @
 swapMapKey
@@ -249,39 +229,70 @@ patchThatChangesAndSortsMapWith cmp oldByIndex newByIndexUnsorted = patchThatCha
 
 -- | Create a 'PatchMapWithPatchingMove' that, if applied to the first 'Map' provided,
 -- will produce the second 'Map'.
+-- Note: this will never produce a patch on a value.
 patchThatChangesMap
-  :: (Ord k, Ord (PatchTarget p), Monoid p)
+  :: forall k p
+  .  (Ord k, Ord (PatchTarget p), Monoid p)
   => Map k (PatchTarget p) -> Map k (PatchTarget p) -> PatchMapWithPatchingMove k p
 patchThatChangesMap oldByIndex newByIndex = patch
-  where oldByValue = Map.fromListWith Set.union $ swap . first Set.singleton <$> Map.toList oldByIndex
-        (insertsAndMoves, unusedValuesByValue) = flip runState oldByValue $ do
-          let f k v = do
-                remainingValues <- get
-                let putRemainingKeys remainingKeys = put $ if Set.null remainingKeys
-                      then Map.delete v remainingValues
-                      else Map.insert v remainingKeys remainingValues
-                case Map.lookup v remainingValues of
-                  Nothing -> return $ NodeInfo (From_Insert v) $ Just undefined -- There's no existing value we can take
-                  Just fromKs ->
-                    if k `Set.member` fromKs
-                    then do
-                      putRemainingKeys $ Set.delete k fromKs
-                      return $ NodeInfo (From_Move k mempty) $ Just undefined -- There's an existing value, and it's here, so no patch necessary
-                    else do
-                      (fromK, remainingKeys) <- return $
-                        fromMaybe (error "PatchMapWithPatchingMove.patchThatChangesMap: impossible: fromKs was empty") $
-                        Set.minView fromKs -- There's an existing value, but it's not here; move it here
-                      putRemainingKeys remainingKeys
-                      return $ NodeInfo (From_Move fromK mempty) $ Just undefined
-          Map.traverseWithKey f newByIndex
-        unusedOldKeys = fold unusedValuesByValue
-        pointlessMove k = \case
-          From_Move k' _ | k == k' -> True
-          _ -> False
-        keyWasMoved k = if k `Map.member` oldByIndex && not (k `Set.member` unusedOldKeys)
-          then Just undefined
-          else Nothing
-        patch = unsafePatchMapWithPatchingMove $ Map.filterWithKey (\k -> not . pointlessMove k . _nodeInfo_from) $ Map.mergeWithKey (\k a _ -> Just $ nodeInfoSetTo (keyWasMoved k) a) (Map.mapWithKey $ \k -> nodeInfoSetTo $ keyWasMoved k) (Map.mapWithKey $ \k _ -> NodeInfo From_Delete $ keyWasMoved k) insertsAndMoves oldByIndex
+  where invert :: Map k (PatchTarget p) -> Map (PatchTarget p) (Set k)
+        invert = Map.fromListWith (<>) . fmap (\(k, v) -> (v, Set.singleton k)) . Map.toList
+        -- In the places where we use unionDistinct, a non-distinct key indicates a bug in this function
+        unionDistinct :: forall k' v'. Ord k' => Map k' v' -> Map k' v' -> Map k' v'
+        unionDistinct = Map.unionWith (error "patchThatChangesMap: non-distinct keys")
+        unionPairDistinct :: (Map k (From k v), Map k (To k)) -> (Map k (From k v), Map k (To k)) -> (Map k (From k v), Map k (To k))
+        unionPairDistinct (oldFroms, oldTos) (newFroms, newTos) = (unionDistinct oldFroms newFroms, unionDistinct oldTos newTos)
+        -- Generate patch info for a single value
+        -- Keys that are found in both the old and new sets will not be patched
+        -- Keys that are found in only the old set will be moved to a new position if any are available; otherwise they will be deleted
+        -- Keys that are found in only the new set will be populated by moving an old key if any are available; otherwise they will be inserted
+        patchSingleValue :: PatchTarget p -> Set k -> Set k -> (Map k (From k p), Map k (To k))
+        patchSingleValue v oldKeys newKeys = foldl' unionPairDistinct mempty $ align (toList $ oldKeys `Set.difference` newKeys) (toList $ newKeys `Set.difference` oldKeys) <&> \case
+          This oldK -> (mempty, Map.singleton oldK Nothing) -- There's nowhere for this value to go, so we know we are deleting it
+          That newK -> (Map.singleton newK $ From_Insert v, mempty) -- There's nowhere fo this value to come from, so we know we are inserting it
+          These oldK newK -> (Map.singleton newK $ From_Move oldK mempty, Map.singleton oldK $ Just newK)
+        -- Run patchSingleValue on a These.  Missing old or new sets are considered empty
+        patchSingleValueThese :: PatchTarget p -> These (Set k) (Set k) -> (Map k (From k p), Map k (To k))
+        patchSingleValueThese v = \case
+          This oldKeys -> patchSingleValue v oldKeys mempty
+          That newKeys -> patchSingleValue v mempty newKeys
+          These oldKeys newKeys -> patchSingleValue v oldKeys newKeys
+        -- Generate froms and tos for all values, then merge them together
+        (froms, tos) = foldl' unionPairDistinct mempty $ Map.mapWithKey patchSingleValueThese $ align (invert oldByIndex) (invert newByIndex)
+        patch = unsafePatchMapWithPatchingMove $ align froms tos <&> \case
+          This from -> NodeInfo from Nothing -- Since we don't have a 'to' record for this key, that must mean it isn't being moved anywhere, so it should be deleted.
+          That to -> NodeInfo From_Delete to -- Since we don't have a 'from' record for this key, it must be getting deleted
+          These from to -> NodeInfo from to
+
+--
+-- NodeInfo
+--
+
+-- | Holds the information about each key: where its new value should come from,
+-- and where its old value should go to
+data NodeInfo k p = NodeInfo
+  { _nodeInfo_from :: !(From k p)
+    -- ^ Where do we get the new value for this key?
+  , _nodeInfo_to :: !(To k)
+    -- ^ If the old value is being kept (i.e. moved rather than deleted or
+    -- replaced), where is it going?
+  }
+deriving instance (Show k, Show p, Show (PatchTarget p)) => Show (NodeInfo k p)
+deriving instance (Read k, Read p, Read (PatchTarget p)) => Read (NodeInfo k p)
+deriving instance (Eq k, Eq p, Eq (PatchTarget p)) => Eq (NodeInfo k p)
+deriving instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (NodeInfo k p)
+
+-- | Traverse the 'NodeInfo' over the key, patch, and patch target. Because of
+-- the type families here, this doesn't it any bi- or tri-traversal class.
+bitraverseNodeInfo
+  :: Applicative f
+  => (k0 -> f k1)
+  -> (p0 -> f p1)
+  -> (PatchTarget p0 -> f (PatchTarget p1))
+  -> NodeInfo k0 p0 -> f (NodeInfo k1 p1)
+bitraverseNodeInfo fk fp fpt (NodeInfo from to) = NodeInfo
+  <$> bitraverseFrom fk fp fpt from
+  <*> traverse fk to
 
 -- | Change the 'From' value of a 'NodeInfo'
 nodeInfoMapFrom
@@ -298,6 +309,47 @@ nodeInfoMapMFrom f ni = fmap (\result -> ni { _nodeInfo_from = result }) $ f $ _
 nodeInfoSetTo
   :: To k -> NodeInfo k v -> NodeInfo k v
 nodeInfoSetTo to ni = ni { _nodeInfo_to = to }
+
+--
+-- From
+--
+
+-- | Describe how a key's new value should be produced
+data From k p
+   = From_Insert (PatchTarget p) -- ^ Insert the given value here
+   | From_Delete -- ^ Delete the existing value, if any, from here
+   | From_Move !k !p -- ^ Move the value here from the given key, and apply the given patch
+
+deriving instance (Show k, Show p, Show (PatchTarget p)) => Show (From k p)
+deriving instance (Read k, Read p, Read (PatchTarget p)) => Read (From k p)
+deriving instance (Eq k, Eq p, Eq (PatchTarget p)) => Eq (From k p)
+deriving instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (From k p)
+
+-- | Traverse the 'From' over the key, patch, and patch target. Because of
+-- the type families here, this doesn't it any bi- or tri-traversal class.
+bitraverseFrom
+  :: Applicative f
+  => (k0 -> f k1)
+  -> (p0 -> f p1)
+  -> (PatchTarget p0 -> f (PatchTarget p1))
+  -> From k0 p0 -> f (From k1 p1)
+bitraverseFrom fk fp fpt = \case
+  From_Insert pt -> From_Insert <$> fpt pt
+  From_Delete -> pure From_Delete
+  From_Move k p -> From_Move <$> fk k <*> fp p
+
+--
+-- To
+--
+
+-- | Describe where a key's old value will go.  If this is 'Just', that means
+-- the key's old value will be moved to the given other key; if it is 'Nothing',
+-- that means it will be deleted.
+type To = Maybe
+
+--
+-- Fixup
+--
 
 -- | Helper data structure used for composing patches using the monoid instance.
 data Fixup k v
