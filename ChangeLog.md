@@ -12,7 +12,7 @@
   orphan for backwards compat, temporarily, but it should eventually be removed
   everywhere.
 
-* `Applicative` is still defined, because the `Abelian` from `groups` has too
+* `Additive` is still defined, because the `Abelian` from `groups` has too
   stringent a constraint.
 
 * `Additive` now lives in `Data.Semigroup.Additive`, but is still reexported
