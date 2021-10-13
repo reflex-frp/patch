@@ -53,6 +53,7 @@ library
                  , Data.Patch.Map
                  , Data.Patch.MapWithMove
                  , Data.Patch.MapWithPatchingMove
+                 , Data.Semigroup.Additive
 
   ghc-options: -Wall -fwarn-redundant-constraints -fwarn-tabs
   default-extensions: PolyKinds
