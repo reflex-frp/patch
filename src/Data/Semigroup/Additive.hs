@@ -24,10 +24,11 @@ import GHC.Generics
 -- | An 'Additive' 'Semigroup' is one where (<>) is commutative
 class Semigroup q => Additive q where
 
--- | Trivial group.
+-- | Trivial additive semigroup.
 instance Additive ()
 
--- | Product group.  A Pair of groups gives rise to a group
+-- | Product additive semigroup.
+-- A Pair of additive semigroups gives rise to a additive semigroup
 instance (Additive a, Additive b) => Additive (a, b)
 
 -- See https://gitlab.haskell.org/ghc/ghc/issues/11135#note_111802 for the reason Compose is not also provided.
@@ -35,16 +36,16 @@ instance (Additive a, Additive b) => Additive (a, b)
 -- really do for functor composition.
 instance Additive (f (g a)) => Additive ((f :.: g) a)
 
--- | Product of groups, Functor style.
+-- | Product of additive semigroups, Functor style.
 instance (Additive (f a), Additive (g a)) => Additive ((f :*: g) a)
 
--- | Trivial group, Functor style
+-- | Trivial additive semigroup, Functor style
 instance Additive (Proxy x)
 
--- | Const lifts groups into a functor.
+-- | Const lifts additive semigroups into a functor.
 instance Additive a => Additive (Const a x)
--- | Ideitnty lifts groups pointwise (at only one point)
+-- | Ideitnty lifts additive semigroups pointwise (at only one point)
 instance Additive a => Additive (Identity a)
 
--- | Functions lift groups pointwise.
+-- | Functions lift additive semigroups pointwise.
 instance Additive b => Additive (a -> b)
