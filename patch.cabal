@@ -43,6 +43,9 @@ library
                , transformers >= 0.5.6.0 && < 0.6
                , witherable >= 0.3 && < 0.4
 
+  if impl(ghc < 8.6) -- really, if base < 8.12
+    build-depends: base-orphans >= 0.8 && < 0.9
+
   exposed-modules: Data.Functor.Misc
                  , Data.Monoid.DecidablyEmpty
                  , Data.Patch
