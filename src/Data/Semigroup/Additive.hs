@@ -44,7 +44,7 @@ instance Additive (Proxy x)
 
 -- | Const lifts additive semigroups into a functor.
 instance Additive a => Additive (Const a x)
--- | Ideitnty lifts additive semigroups pointwise (at only one point)
+-- | Identity lifts additive semigroups pointwise (at only one point)
 instance Additive a => Additive (Identity a)
 
 -- | Functions lift additive semigroups pointwise.
