@@ -95,7 +95,7 @@ instance Additive (Proxy x)
 -- | Const lifts groups into a functor.
 deriving instance Group a => Group (Const a x)
 instance Additive a => Additive (Const a x)
--- | Ideitnty lifts groups pointwise (at only one point)
+-- | Identity lifts groups pointwise (at only one point)
 deriving instance Group a => Group (Identity a)
 instance Additive a => Additive (Identity a)
 
