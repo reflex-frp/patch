@@ -85,6 +85,7 @@ instance Group (Proxy x) where
 
 -- | Const lifts groups into a functor.
 deriving instance Group a => Group (Const a x)
+
 -- | Identity lifts groups pointwise (at only one point)
 deriving instance Group a => Group (Identity a)
 
