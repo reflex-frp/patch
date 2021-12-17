@@ -1,11 +1,11 @@
 # Revision history for patch
 
-## 0.0.5.0 - 2021-12-17
+## Unreleased
 
 * New dep of `data-orphans` for old GHC to get instances honestly instead of
   via `monoidal-containers`.
 
-## Unreleased
+## 0.0.5.0 - 2021-12-17
 
 * `Additive` now lives in `Data.Semigroup.Additive`, but is still reexported
   from `Data.Patch` for compatability.
