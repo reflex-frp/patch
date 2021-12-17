@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+* New dep of `data-orphans` for old GHC to get instances honestly instead of
+  via `monoidal-containers`.
+
+## Unreleased
+
 * `Additive` now lives in `Data.Semigroup.Additive`, but is still reexported
   from `Data.Patch` for compatability.
 
