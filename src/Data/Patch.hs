@@ -14,7 +14,6 @@ module Data.Patch
   ) where
 
 import Control.Applicative
-import Data.Functor.Const (Const (..))
 import Data.Functor.Identity
 import Data.Map.Monoidal (MonoidalMap)
 import Data.Proxy

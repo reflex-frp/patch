@@ -66,15 +66,18 @@ import Data.Patch.Class
 import Data.Patch.MapWithPatchingMove (PatchMapWithPatchingMove(..), To)
 import qualified Data.Patch.MapWithPatchingMove as PM -- already a transparent synonym
 
-import Control.Lens
 import Data.List
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Proxy
-#if !MIN_VERSION_base(4,11,0)
-import Data.Semigroup (Semigroup (..))
-#endif
+
+
+
 import Data.Traversable (foldMapDefault)
+import Data.Functor.WithIndex
+import Data.Foldable.WithIndex
+import Data.Traversable.WithIndex
+import Data.Functor.Identity
 
 -- | Patch a Map with additions, deletions, and moves.  Invariant: If key @k1@
 -- is coming from @From_Move k2@, then key @k2@ should be going to @Just k1@,
@@ -86,11 +89,11 @@ newtype PatchMapWithMove k (v :: Type) = PatchMapWithMove'
   deriving ( Show, Read, Eq, Ord
 -- Haddock cannot handle documentation here before GHC 8.6
            ,
-#if __GLASGOW_HASKELL__ >= 806
+
              -- | Compose patches having the same effect as applying the
              -- patches in turn: @'applyAlways' (p <> q) == 'applyAlways' p .
              -- 'applyAlways' q@
-#endif
+
              Semigroup
            , Monoid
            )
@@ -106,14 +109,6 @@ pattern PatchMapWithMove :: Map k (NodeInfo k v) -> PatchMapWithMove k v
 unPatchMapWithMove :: PatchMapWithMove k v -> Map k (NodeInfo k v)
 pattern PatchMapWithMove { unPatchMapWithMove } = PatchMapWithMove' (PatchMapWithPatchingMove (Coerce unPatchMapWithMove))
 
-_PatchMapWithMove
-  :: Iso
-       (PatchMapWithMove k0 v0)
-       (PatchMapWithMove k1 v1)
-       (Map k0 (NodeInfo k0 v0))
-       (Map k1 (NodeInfo k1 v1))
-_PatchMapWithMove = iso unPatchMapWithMove PatchMapWithMove
-
 instance Functor (PatchMapWithMove k) where
   fmap f = runIdentity . traverse (Identity . f)
 
@@ -121,19 +116,12 @@ instance Foldable (PatchMapWithMove k) where
   foldMap = foldMapDefault
 
 instance Traversable (PatchMapWithMove k) where
-  traverse =
-    _PatchMapWithMove .
-    traverse .
-    traverse
+  traverse f (PatchMapWithMove x) = PatchMapWithMove <$> (traverse . traverse) f x
 
 instance FunctorWithIndex k (PatchMapWithMove k)
 instance FoldableWithIndex k (PatchMapWithMove k)
 instance TraversableWithIndex k (PatchMapWithMove k) where
-  itraverse = itraversed . Indexed
-  itraversed =
-    _PatchMapWithMove .>
-    itraversed <.
-    traverse
+  itraverse f (PatchMapWithMove x) = PatchMapWithMove <$> itraverse (traverse . f) x
 
 -- | Create a 'PatchMapWithMove', validating it
 patchMapWithMove :: Ord k => Map k (NodeInfo k v) -> Maybe (PatchMapWithMove k v)
@@ -233,14 +221,6 @@ pattern NodeInfo { _nodeInfo_to, _nodeInfo_from } = NodeInfo'
     , PM._nodeInfo_from = Coerce _nodeInfo_from
     }
 
-_NodeInfo
-  :: Iso
-       (NodeInfo k0 v0)
-       (NodeInfo k1 v1)
-       (PM.NodeInfo k0 (Proxy v0))
-       (PM.NodeInfo k1 (Proxy v1))
-_NodeInfo = iso unNodeInfo' NodeInfo'
-
 instance Functor (NodeInfo k) where
   fmap f = runIdentity . traverse (Identity . f)
 
@@ -307,6 +287,4 @@ bitraverseFrom fk fv = fmap From'
   . PM.bitraverseFrom fk (\ ~Proxy -> pure Proxy) fv
   . coerce
 
-makeWrapped ''PatchMapWithMove
-makeWrapped ''NodeInfo
-makeWrapped ''From
+

@@ -48,8 +48,6 @@ module Data.Patch.MapWithPatchingMove
 
 import Data.Patch.Class
 
-import Control.Lens hiding (from, to)
-import Control.Lens.TH (makeWrapped)
 import Data.Align (align)
 import Data.Foldable (toList)
 import Data.Function
@@ -64,6 +62,14 @@ import Data.Monoid.DecidablyEmpty
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.These (These (..))
+import Data.Functor
+
+#ifdef lens
+
+import Control.Lens.TH (makeWrapped)
+
+#endif
+
 
 -- | Patch a Map with additions, deletions, and moves.  Invariant: If key @k1@
 -- is coming from @From_Move k2@, then key @k2@ should be going to @Just k1@,
@@ -429,4 +435,8 @@ instance ( Ord k
   mempty = PatchMapWithPatchingMove mempty
   mappend = (<>)
 
+#ifdef lens
+
 makeWrapped ''PatchMapWithPatchingMove
+
+#endif

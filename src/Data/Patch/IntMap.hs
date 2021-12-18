@@ -11,7 +11,6 @@
 -- insert/update or delete of associations.
 module Data.Patch.IntMap where
 
-import Control.Lens
 import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as IntMap
 import Data.Maybe
@@ -20,6 +19,15 @@ import Data.Monoid.DecidablyEmpty
 import Data.Semigroup (Semigroup (..))
 #endif
 import Data.Patch.Class
+import Data.Functor.WithIndex
+import Data.Foldable.WithIndex
+import Data.Traversable.WithIndex
+
+#ifdef lens
+
+import Control.Lens
+
+#endif
 
 -- | 'Patch' for 'IntMap' which represents insertion or deletion of keys in the mapping.
 -- Internally represented by 'IntMap (Maybe a)', where @Just@ means insert/update
@@ -35,7 +43,11 @@ newtype PatchIntMap a = PatchIntMap { unPatchIntMap :: IntMap (Maybe a) }
 -- precedence.
 deriving instance Semigroup (PatchIntMap v)
 
+#ifdef lens
+
 makeWrapped ''PatchIntMap
+
+#endif
 
 -- | Apply the insertions or deletions to a given 'IntMap'.
 instance Patch (PatchIntMap a) where
@@ -47,9 +59,7 @@ instance Patch (PatchIntMap a) where
 
 instance FunctorWithIndex Int PatchIntMap
 instance FoldableWithIndex Int PatchIntMap
-instance TraversableWithIndex Int PatchIntMap where
-  itraverse = itraversed . Indexed
-  itraversed = _Wrapped .> itraversed <. traversed
+instance TraversableWithIndex Int PatchIntMap
 
 -- | Map a function @Int -> a -> b@ over all @a@s in the given @'PatchIntMap' a@
 -- (that is, all inserts/updates), producing a @PatchIntMap b@.

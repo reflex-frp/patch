@@ -14,12 +14,20 @@ module Data.Patch.Map where
 
 import Data.Patch.Class
 
-import Control.Lens
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.Monoid.DecidablyEmpty
 import Data.Semigroup (Semigroup (..), stimesIdempotentMonoid)
+import Data.Traversable.WithIndex
+import Data.Foldable.WithIndex
+import Data.Functor.WithIndex
+
+#ifdef lens
+
+import Control.Lens
+
+#endif
 
 -- | A set of changes to a 'Map'.  Any element may be inserted/updated or
 -- deleted.  Insertions are represented as values wrapped in 'Just', while
@@ -58,8 +66,10 @@ instance Ord k => Patch (PatchMap k v) where
 instance FunctorWithIndex k (PatchMap k)
 instance FoldableWithIndex k (PatchMap k)
 instance TraversableWithIndex k (PatchMap k) where
-  itraverse = itraversed . Indexed
-  itraversed = _Wrapped .> itraversed <. traversed
+  itraverse f (PatchMap p) = PatchMap <$> itraverse g p
+    where
+      g _ Nothing = pure Nothing
+      g k (Just a) = Just <$> f k a
 
 -- | Returns all the new elements that will be added to the 'Map'
 patchMapNewElements :: PatchMap k v -> [v]
@@ -69,4 +79,8 @@ patchMapNewElements (PatchMap p) = catMaybes $ Map.elems p
 patchMapNewElementsMap :: PatchMap k v -> Map k v
 patchMapNewElementsMap (PatchMap p) = Map.mapMaybe id p
 
+#ifdef lens
+
 makeWrapped ''PatchMap
+
+#endif
