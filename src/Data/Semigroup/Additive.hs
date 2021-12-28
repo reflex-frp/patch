@@ -2,7 +2,6 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeFamilies #-}
 
--- TODO upstream somwhere else?
 {-|
 Description : A class for commutative semigroups
 -}
