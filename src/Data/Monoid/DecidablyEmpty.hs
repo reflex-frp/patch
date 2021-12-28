@@ -6,7 +6,7 @@
 
 -- TODO upstream somwhere else?
 {-|
-Description: This module provides a class to decide whether a monoid is empty.
+Description: This module provides a class to decide whether a monoid element is the identity.
 -}
 module Data.Monoid.DecidablyEmpty where
 
