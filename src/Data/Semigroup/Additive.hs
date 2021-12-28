@@ -1,12 +1,11 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeFamilies #-}
--- |
--- Module:
---   Data.Semigroup.Additive
--- Description:
---   This module defines a class for commutative semigroups, until it is moved
---   to another library.
+
+-- TODO upstream somwhere else?
+{-|
+Description : A class for commutative semigroups
+-}
 module Data.Semigroup.Additive
   ( Additive
   ) where

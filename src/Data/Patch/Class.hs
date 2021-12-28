@@ -1,7 +1,12 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
--- | The interface for types which represent changes made to other types
+
+{-|
+Description: The module provides the 'Patch' class.
+
+This is a class for types which represent changes made to other types
+-}
 module Data.Patch.Class where
 
 import Data.Functor.Identity
