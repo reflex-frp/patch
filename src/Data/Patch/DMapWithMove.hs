@@ -11,8 +11,13 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
--- |Module containing @'PatchDMapWithMove' k v@ and associated functions, which represents a 'Patch' to a @'DMap' k v@ which can insert, update, delete, and
--- move values between keys.
+{-|
+Description: A more advanced 'Patch' for 'DMap'.
+
+This Module contains @'PatchDMapWithMove' k v@ and associated functions, which
+represents a 'Patch' to a @'DMap' k v@ which can insert, update, delete, and
+move values between keys.
+-}
 module Data.Patch.DMapWithMove where
 
 import Data.Patch.Class

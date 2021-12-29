@@ -5,6 +5,9 @@
 {-# LANGUAGE TypeOperators #-}
 
 -- TODO upstream somwhere else?
+{-|
+Description: This module provides a class to decide whether a monoid element is the identity.
+-}
 module Data.Monoid.DecidablyEmpty where
 
 import Data.Functor.Identity

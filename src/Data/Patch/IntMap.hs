@@ -7,8 +7,11 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
--- | Module containing 'PatchIntMap', a 'Patch' for 'IntMap' which allows for
--- insert/update or delete of associations.
+{-|
+Description: Module containing 'PatchIntMap', a 'Patch' for 'IntMap'.
+
+Patches of this sort allow for insert/update or delete of associations.
+-}
 module Data.Patch.IntMap where
 
 import Control.Applicative

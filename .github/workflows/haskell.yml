@@ -42,6 +42,6 @@ jobs:
     - name: Build
       run: cabal build --enable-tests --enable-benchmarks all
     - name: Run tests
-      run: cabal test all
+      run: cabal test --enable-tests all
     - name: Build Docs
       run: cabal haddock

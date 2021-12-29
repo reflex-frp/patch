@@ -1,5 +1,5 @@
 Name: patch
-Version: 0.0.4.0
+Version: 0.0.5.1
 Synopsis: Data structures for describing changes to other data structures.
 Description:
   Data structures for describing changes to other data structures.
@@ -41,7 +41,10 @@ library
                , lens >= 4.7 && < 5
                , semigroupoids >= 4.0 && < 6
                , transformers >= 0.5.6.0 && < 0.6
-               , witherable >= 0.3 && < 0.4
+               , witherable >= 0.3 && < 0.5
+
+  if impl(ghc < 8.6) -- really, if base < 8.12
+    build-depends: base-orphans >= 0.8 && < 0.9
 
   exposed-modules: Data.Functor.Misc
                  , Data.Monoid.DecidablyEmpty
@@ -53,6 +56,7 @@ library
                  , Data.Patch.Map
                  , Data.Patch.MapWithMove
                  , Data.Patch.MapWithPatchingMove
+                 , Data.Semigroup.Additive
 
   ghc-options: -Wall -fwarn-redundant-constraints -fwarn-tabs
   default-extensions: PolyKinds
