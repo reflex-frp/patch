@@ -8,8 +8,12 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
--- | 'Patch'es on 'Map' that consist only of insertions (including overwrites)
--- and deletions
+{-|
+Description: A basic 'Patch' on 'Map'
+
+Patches of this type consist only of insertions (including overwrites) and
+deletions.
+-}
 module Data.Patch.Map where
 
 import Data.Patch.Class
