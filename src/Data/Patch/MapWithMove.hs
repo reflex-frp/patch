@@ -14,8 +14,12 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
 
--- | 'Patch'es on 'Map' that can insert, delete, and move values from one key to
--- another
+{-|
+Description: An intermediate 'Patch' on 'Map'
+
+Patches of this type can insert, delete, and also move values from one key to
+another.
+-}
 module Data.Patch.MapWithMove
   ( PatchMapWithMove
     ( PatchMapWithMove

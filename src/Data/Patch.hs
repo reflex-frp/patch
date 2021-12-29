@@ -3,11 +3,11 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
--- |
--- Module:
---   Data.Patch
--- Description:
---   This module defines the 'Patch' class.
+
+{-|
+Description:
+  This module defines the 'Group' class, and reexports the other modules.
+-}
 module Data.Patch
   ( module Data.Patch
   , module X

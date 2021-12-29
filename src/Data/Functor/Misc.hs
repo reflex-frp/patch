@@ -10,9 +10,14 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
--- | This module provides types and functions with no particular theme, but
--- which are relevant to the use of 'Functor'-based datastructures like
--- 'Data.Dependent.Map.DMap'.
+
+{- |
+Description: Misc utilities relating to functor.
+
+This module provides types and functions with no particular theme, but which
+are relevant to the use of 'Functor'-based datastructures like
+'Data.Dependent.Map.DMap'.
+-}
 module Data.Functor.Misc
   ( -- * Const2
     Const2 (..)
