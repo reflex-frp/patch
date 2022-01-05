@@ -2,7 +2,7 @@
 
 ## 0.0.5.1 - 2021-12-28
 
-* New dep of `data-orphans` for old GHC to get instances honestly instead of
+* New dep of `base-orphans` for old GHC to get instances honestly instead of
   via `monoidal-containers`.
 
 ## 0.0.5.0 - 2021-12-17
