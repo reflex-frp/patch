@@ -14,9 +14,11 @@ Patches of this sort allow for insert/update or delete of associations.
 -}
 module Data.Patch.IntMap where
 
+import Control.Applicative
 import Control.Lens
-import Data.IntMap.Strict (IntMap)
-import qualified Data.IntMap.Strict as IntMap
+import Data.IntMap.Lazy (IntMap)
+import qualified Data.IntMap.Lazy as IntMap
+import Data.IntMap.Merge.Lazy
 import Data.Maybe
 import Data.Monoid.DecidablyEmpty
 #if !MIN_VERSION_base(4,11,0)
@@ -43,10 +45,14 @@ makeWrapped ''PatchIntMap
 -- | Apply the insertions or deletions to a given 'IntMap'.
 instance Patch (PatchIntMap a) where
   type PatchTarget (PatchIntMap a) = IntMap a
-  apply (PatchIntMap p) v = if IntMap.null p then Nothing else Just $
-    let removes = IntMap.filter isNothing p
-        adds = IntMap.mapMaybe id p
-    in IntMap.union adds $ v `IntMap.difference` removes
+  apply (PatchIntMap p) old
+    | IntMap.null p
+    = Nothing
+    | otherwise
+    = Just $! merge
+        (mapMaybeMissing $ \_k mv -> mv)
+        preserveMissing
+        (zipWithMaybeMatched (\_k mv v -> mv <|> Just v)) p old
 
 instance FunctorWithIndex Int PatchIntMap
 instance FoldableWithIndex Int PatchIntMap

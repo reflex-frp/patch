@@ -18,12 +18,14 @@ module Data.Patch.Map where
 
 import Data.Patch.Class
 
+import Control.Applicative
 import Control.Lens
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.Monoid.DecidablyEmpty
 import Data.Semigroup (Semigroup (..), stimesIdempotentMonoid)
+import Data.Map.Merge.Lazy
 
 -- | A set of changes to a 'Map'.  Any element may be inserted/updated or
 -- deleted.  Insertions are represented as values wrapped in 'Just', while
@@ -52,12 +54,36 @@ instance Ord k => Semigroup (PatchMap k v) where
 instance Ord k => Patch (PatchMap k v) where
   type PatchTarget (PatchMap k v) = Map k v
   {-# INLINABLE apply #-}
-  apply (PatchMap p) old = Just $! insertions `Map.union` (old `Map.difference` deletions) --TODO: return Nothing sometimes --Note: the strict application here is critical to ensuring that incremental merges don't hold onto all their prerequisite events forever; can we make this more robust?
-    where insertions = Map.mapMaybeWithKey (const id) p
-          deletions = Map.mapMaybeWithKey (const nothingToJust) p
-          nothingToJust = \case
-            Nothing -> Just ()
-            Just _ -> Nothing
+  apply (PatchMap p) old
+    = changedToMaybe $
+        mergeA
+          (traverseMaybeMissing $ \_k mv ->
+             case mv of
+               Nothing -> Unchanged Nothing
+               Just _ -> Changed mv)
+          preserveMissing
+          -- We could try to detect an update here that does nothing, but that
+          -- will be quite unreliable for a map of Events or similar; it may
+          -- not be worth the trouble.
+          (zipWithMaybeAMatched (\_k mv v -> Changed $! mv <|> Just v)) p old
+
+changedToMaybe :: Changed a -> Maybe a
+changedToMaybe (Unchanged _) = Nothing
+changedToMaybe (Changed a) = Just a
+
+data Changed a
+  = Unchanged a
+  | Changed a
+  deriving (Functor)
+
+instance Applicative Changed where
+  pure = Unchanged
+#if MIN_VERSION_base(4,10,0)
+  liftA2 f (Changed x) (Changed y) = Changed (f x y)
+  liftA2 f (Unchanged x) (Changed y) = Changed (f x y)
+  liftA2 f (Changed x) (Unchanged y) = Changed (f x y)
+  liftA2 f (Unchanged x) (Unchanged y) = Unchanged (f x y)
+#endif
 
 instance FunctorWithIndex k (PatchMap k)
 instance FoldableWithIndex k (PatchMap k)

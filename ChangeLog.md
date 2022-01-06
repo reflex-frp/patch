@@ -1,5 +1,9 @@
 # Revision history for patch
 
+## Unreleased
+
+* Improve asympotics of merging
+
 ## 0.0.5.1 - 2021-12-28
 
 * New dep of `base-orphans` for old GHC to get instances honestly instead of
