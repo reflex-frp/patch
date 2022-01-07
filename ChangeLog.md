@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+Use other packages to avoid duplication / scope-creep:
+
+ *  Use `groups` for `Group`
+
+## Unreleased
+
  * Use `commutative-semigroups` for `Commutative`, making `Additive` a
    deprecated alias.
 
