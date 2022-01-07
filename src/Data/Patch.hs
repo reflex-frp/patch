@@ -13,6 +13,7 @@ module Data.Patch
   , module X
   ) where
 
+import Data.Semigroup.Commutative
 import Control.Applicative
 import Data.Functor.Const (Const (..))
 import Data.Functor.Identity
@@ -46,10 +47,10 @@ class (Semigroup q, Monoid q) => Group q where
   (~~) :: q -> q -> q
   r ~~ s = r <> negateG s
 
--- | The elements of an 'Additive' 'Semigroup' can be considered as patches of their own type.
+-- | The elements of an 'Commutative' 'Semigroup' can be considered as patches of their own type.
 newtype AdditivePatch p = AdditivePatch { unAdditivePatch :: p }
 
-instance Additive p => Patch (AdditivePatch p) where
+instance Commutative p => Patch (AdditivePatch p) where
   type PatchTarget (AdditivePatch p) = p
   apply (AdditivePatch p) q = Just $ p <> q
 

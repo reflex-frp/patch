@@ -1,5 +1,10 @@
 # Revision history for patch
 
+## Unreleased
+
+ * Use `commutative-semigroups` for `Commutative`, making `Additive` a
+   deprecated alias.
+
 ## 0.0.5.2 - 2022-01-09
 
 * Correct field order of `PatchMapWithMove.NodeInfo`.
