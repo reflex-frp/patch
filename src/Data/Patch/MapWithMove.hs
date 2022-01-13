@@ -42,8 +42,8 @@ module Data.Patch.MapWithMove
   -- * Node Info
   , NodeInfo
     ( NodeInfo
-    , _nodeInfo_to
     , _nodeInfo_from
+    , _nodeInfo_to
     , ..
     )
   , bitraverseNodeInfo
@@ -228,13 +228,13 @@ deriving instance (Eq k, Eq p) => Eq (NodeInfo k p)
 deriving instance (Ord k, Ord p) => Ord (NodeInfo k p)
 
 {-# COMPLETE NodeInfo #-}
-pattern NodeInfo :: To k -> From k v -> NodeInfo k v
-_nodeInfo_to :: NodeInfo k v -> To k
+pattern NodeInfo :: From k v -> To k -> NodeInfo k v
 _nodeInfo_from :: NodeInfo k v -> From k v
-pattern NodeInfo { _nodeInfo_to, _nodeInfo_from } = NodeInfo'
+_nodeInfo_to :: NodeInfo k v -> To k
+pattern NodeInfo { _nodeInfo_from, _nodeInfo_to } = NodeInfo'
   PM.NodeInfo
-    { PM._nodeInfo_to = _nodeInfo_to
-    , PM._nodeInfo_from = Coerce _nodeInfo_from
+    { PM._nodeInfo_from = Coerce _nodeInfo_from
+    , PM._nodeInfo_to = _nodeInfo_to
     }
 
 _NodeInfo
