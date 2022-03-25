@@ -1,6 +1,6 @@
 name: github-action
 
-on: [push, pull_request] 
+on: [push, pull_request]
 
 jobs:
   build:
@@ -19,7 +19,7 @@ jobs:
     name: GHC ${{ matrix.ghc }} on ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
-    - uses: actions/setup-haskell@v1
+    - uses: haskell/actions/setup@v1
       with:
         ghc-version: ${{ matrix.ghc }}
     - name: Cache
