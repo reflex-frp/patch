@@ -50,6 +50,7 @@ import Data.GADT.Compare
 import Data.GADT.Show
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IntMap
+import Data.Kind (Type)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Some (Some, mkSome)
@@ -63,7 +64,7 @@ import Data.Typeable hiding (Refl)
 
 -- | 'Const2' stores a value of a given type 'k' and ensures that a particular
 -- type 'v' is always given for the last type parameter
-data Const2 :: * -> x -> x -> * where
+data Const2 :: Type -> x -> x -> Type where
   Const2 :: k -> Const2 k v v
   deriving (Typeable)
 
@@ -130,7 +131,7 @@ weakenDMapWith f = Map.fromDistinctAscList . map (\(k :=> v) -> (mkSome k, f v))
 -- | 'WrapArg' can be used to tag a value in one functor with a type
 -- representing another functor.  This was primarily used with dependent-map <
 -- 0.2, in which the value type was not wrapped in a separate functor.
-data WrapArg :: (k -> *) -> (k -> *) -> * -> * where
+data WrapArg :: (k -> Type) -> (k -> Type) -> Type -> Type where
   WrapArg :: f a -> WrapArg g f (g a)
 
 deriving instance Eq (f a) => Eq (WrapArg g f (g' a))
