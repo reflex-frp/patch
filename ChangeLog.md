@@ -1,5 +1,9 @@
 # Revision history for patch
 
+## Unreleased
+
+* Support GHC 9.2
+
 ## 0.0.5.2 - 2022-01-09
 
 * Correct field order of `PatchMapWithMove.NodeInfo`.
