@@ -5,6 +5,8 @@
  * Use `commutative-semigroups` for `Commutative`, making `Additive` a
    deprecated alias.
 
+* Support GHC 9.2
+
 ## 0.0.5.2 - 2022-01-09
 
 * Correct field order of `PatchMapWithMove.NodeInfo`.
