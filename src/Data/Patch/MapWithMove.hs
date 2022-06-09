@@ -42,8 +42,8 @@ module Data.Patch.MapWithMove
   -- * Node Info
   , NodeInfo
     ( NodeInfo
-    , _nodeInfo_to
     , _nodeInfo_from
+    , _nodeInfo_to
     , ..
     )
   , bitraverseNodeInfo
@@ -70,7 +70,8 @@ import Data.Patch.Class
 import Data.Patch.MapWithPatchingMove (PatchMapWithPatchingMove(..), To)
 import qualified Data.Patch.MapWithPatchingMove as PM -- already a transparent synonym
 
-import Control.Lens
+import Control.Lens hiding  (FunctorWithIndex, FoldableWithIndex, TraversableWithIndex)
+import qualified Control.Lens as L
 import Data.List
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -79,6 +80,9 @@ import Data.Proxy
 import Data.Semigroup (Semigroup (..))
 #endif
 import Data.Traversable (foldMapDefault)
+import Data.Functor.WithIndex
+import Data.Foldable.WithIndex
+import Data.Traversable.WithIndex
 
 -- | Patch a Map with additions, deletions, and moves.  Invariant: If key @k1@
 -- is coming from @From_Move k2@, then key @k2@ should be going to @Just k1@,
@@ -133,11 +137,13 @@ instance Traversable (PatchMapWithMove k) where
 instance FunctorWithIndex k (PatchMapWithMove k)
 instance FoldableWithIndex k (PatchMapWithMove k)
 instance TraversableWithIndex k (PatchMapWithMove k) where
-  itraverse = itraversed . Indexed
-  itraversed =
-    _PatchMapWithMove .>
-    itraversed <.
-    traverse
+  itraverse = (_PatchMapWithMove .> itraversed <. traverse) . Indexed
+
+#if !MIN_VERSION_lens(5,0,0)
+instance L.FunctorWithIndex k    (PatchMapWithMove k) where imap = Data.Functor.WithIndex.imap
+instance L.FoldableWithIndex k   (PatchMapWithMove k) where ifoldMap = Data.Foldable.WithIndex.ifoldMap
+instance L.TraversableWithIndex k (PatchMapWithMove k) where itraverse = Data.Traversable.WithIndex.itraverse
+#endif
 
 -- | Create a 'PatchMapWithMove', validating it
 patchMapWithMove :: Ord k => Map k (NodeInfo k v) -> Maybe (PatchMapWithMove k v)
@@ -228,13 +234,13 @@ deriving instance (Eq k, Eq p) => Eq (NodeInfo k p)
 deriving instance (Ord k, Ord p) => Ord (NodeInfo k p)
 
 {-# COMPLETE NodeInfo #-}
-pattern NodeInfo :: To k -> From k v -> NodeInfo k v
-_nodeInfo_to :: NodeInfo k v -> To k
+pattern NodeInfo :: From k v -> To k -> NodeInfo k v
 _nodeInfo_from :: NodeInfo k v -> From k v
-pattern NodeInfo { _nodeInfo_to, _nodeInfo_from } = NodeInfo'
+_nodeInfo_to :: NodeInfo k v -> To k
+pattern NodeInfo { _nodeInfo_from, _nodeInfo_to } = NodeInfo'
   PM.NodeInfo
-    { PM._nodeInfo_to = _nodeInfo_to
-    , PM._nodeInfo_from = Coerce _nodeInfo_from
+    { PM._nodeInfo_from = Coerce _nodeInfo_from
+    , PM._nodeInfo_to = _nodeInfo_to
     }
 
 _NodeInfo

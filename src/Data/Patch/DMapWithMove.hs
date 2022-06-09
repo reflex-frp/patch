@@ -33,6 +33,7 @@ import Data.Functor.Misc
 import Data.Functor.Product
 import Data.GADT.Compare (GEq (..), GCompare (..))
 import Data.GADT.Show (GShow, gshow)
+import Data.Kind (Type)
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.Monoid.DecidablyEmpty
@@ -67,7 +68,7 @@ data NodeInfo k v a = NodeInfo
 
 -- |Structure describing a particular change to a key, be it inserting a new key (@From_Insert@), updating an existing key (@From_Insert@ again), deleting a
 -- key (@From_Delete@), or moving a key (@From_Move@).
-data From (k :: a -> *) (v :: a -> *) :: a -> * where
+data From (k :: a -> Type) (v :: a -> Type) :: a -> Type where
   -- |Insert a new or update an existing key with the given value @v a@
   From_Insert :: v a -> From k v a
   -- |Delete the existing key
