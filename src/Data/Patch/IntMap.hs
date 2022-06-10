@@ -15,7 +15,9 @@ Patches of this sort allow for insert/update or delete of associations.
 module Data.Patch.IntMap where
 
 import Control.Lens hiding  (FunctorWithIndex, FoldableWithIndex, TraversableWithIndex)
+#if !MIN_VERSION_lens(5,0,0)
 import qualified Control.Lens as L
+#endif
 import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as IntMap
 import Data.Maybe

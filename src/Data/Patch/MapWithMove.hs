@@ -71,7 +71,9 @@ import Data.Patch.MapWithPatchingMove (PatchMapWithPatchingMove(..), To)
 import qualified Data.Patch.MapWithPatchingMove as PM -- already a transparent synonym
 
 import Control.Lens hiding  (FunctorWithIndex, FoldableWithIndex, TraversableWithIndex)
+#if !MIN_VERSION_lens(5,0,0)
 import qualified Control.Lens as L
+#endif
 import Data.List
 import Data.Map (Map)
 import qualified Data.Map as Map

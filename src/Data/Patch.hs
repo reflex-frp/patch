@@ -13,7 +13,7 @@ module Data.Patch
   , module X
   ) where
 
-import Control.Applicative
+import Control.Applicative (liftA2)
 import Data.Functor.Const (Const (..))
 import Data.Functor.Identity
 import Data.Map.Monoidal (MonoidalMap)

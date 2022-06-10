@@ -41,7 +41,6 @@ module Data.Functor.Misc
   , ComposeMaybe (..)
   ) where
 
-import Control.Applicative ((<$>))
 import Data.Dependent.Map (DMap)
 import qualified Data.Dependent.Map as DMap
 import Data.Dependent.Sum
