@@ -57,6 +57,7 @@ library
                  , Data.Patch.Map
                  , Data.Patch.MapWithMove
                  , Data.Patch.MapWithPatchingMove
+                 , Data.Patch.PatchOrReplacement
                  , Data.Semigroup.Additive
 
   ghc-options: -Wall -fwarn-redundant-constraints -fwarn-tabs
