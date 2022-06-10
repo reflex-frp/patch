@@ -111,8 +111,8 @@ pattern Coerce x <- (coerce -> x)
 
 {-# COMPLETE PatchMapWithMove #-}
 pattern PatchMapWithMove :: Map k (NodeInfo k v) -> PatchMapWithMove k v
--- | Extract the representation of the 'PatchMapWithMove' as a map of
--- 'NodeInfo'.
+-- | Extract the representation of the t'PatchMapWithMove' as a map of
+-- t'NodeInfo'.
 unPatchMapWithMove :: PatchMapWithMove k v -> Map k (NodeInfo k v)
 pattern PatchMapWithMove { unPatchMapWithMove } = PatchMapWithMove' (PatchMapWithPatchingMove (Coerce unPatchMapWithMove))
 
@@ -147,19 +147,19 @@ instance L.FoldableWithIndex k   (PatchMapWithMove k) where ifoldMap = Data.Fold
 instance L.TraversableWithIndex k (PatchMapWithMove k) where itraverse = Data.Traversable.WithIndex.itraverse
 #endif
 
--- | Create a 'PatchMapWithMove', validating it
+-- | Create a t'PatchMapWithMove', validating it
 patchMapWithMove :: Ord k => Map k (NodeInfo k v) -> Maybe (PatchMapWithMove k v)
 patchMapWithMove = fmap PatchMapWithMove' . PM.patchMapWithPatchingMove . coerce
 
--- | Create a 'PatchMapWithMove' that inserts everything in the given 'Map'
+-- | Create a t'PatchMapWithMove' that inserts everything in the given 'Map'
 patchMapWithMoveInsertAll :: Map k v -> PatchMapWithMove k v
 patchMapWithMoveInsertAll = PatchMapWithMove' . PM.patchMapWithPatchingMoveInsertAll
 
--- | Make a @'PatchMapWithMove' k v@ which has the effect of inserting or updating a value @v@ to the given key @k@, like 'Map.insert'.
+-- | Make a @t'PatchMapWithMove' k v@ which has the effect of inserting or updating a value @v@ to the given key @k@, like 'Map.insert'.
 insertMapKey :: k -> v -> PatchMapWithMove k v
 insertMapKey k v = PatchMapWithMove' $ PM.insertMapKey k v
 
--- |Make a @'PatchMapWithMove' k v@ which has the effect of moving the value from the first key @k@ to the second key @k@, equivalent to:
+-- |Make a @t'PatchMapWithMove' k v@ which has the effect of moving the value from the first key @k@ to the second key @k@, equivalent to:
 --
 -- @
 --     'Map.delete' src (maybe map ('Map.insert' dst) (Map.lookup src map))
@@ -167,7 +167,7 @@ insertMapKey k v = PatchMapWithMove' $ PM.insertMapKey k v
 moveMapKey :: Ord k => k -> k -> PatchMapWithMove k v
 moveMapKey src dst = PatchMapWithMove' $ PM.moveMapKey src dst
 
--- |Make a @'PatchMapWithMove' k v@ which has the effect of swapping two keys in the mapping, equivalent to:
+-- |Make a @t'PatchMapWithMove' k v@ which has the effect of swapping two keys in the mapping, equivalent to:
 --
 -- @
 --     let aMay = Map.lookup a map
@@ -179,13 +179,13 @@ moveMapKey src dst = PatchMapWithMove' $ PM.moveMapKey src dst
 swapMapKey :: Ord k => k -> k -> PatchMapWithMove k v
 swapMapKey src dst = PatchMapWithMove' $ PM.swapMapKey src dst
 
--- |Make a @'PatchMapWithMove' k v@ which has the effect of deleting a key in the mapping, equivalent to 'Map.delete'.
+-- |Make a @t'PatchMapWithMove' k v@ which has the effect of deleting a key in the mapping, equivalent to 'Map.delete'.
 deleteMapKey :: k -> PatchMapWithMove k v
 deleteMapKey = PatchMapWithMove' . PM.deleteMapKey
 
--- | Wrap a @'Map' k (NodeInfo k v)@ representing patch changes into a @'PatchMapWithMove' k v@, without checking any invariants.
+-- | Wrap a @'Map' k (NodeInfo k v)@ representing patch changes into a @t'PatchMapWithMove' k v@, without checking any invariants.
 --
--- __Warning:__ when using this function, you must ensure that the invariants of 'PatchMapWithMove' are preserved; they will not be checked.
+-- __Warning:__ when using this function, you must ensure that the invariants of t'PatchMapWithMove' are preserved; they will not be checked.
 unsafePatchMapWithMove :: Map k (NodeInfo k v) -> PatchMapWithMove k v
 unsafePatchMapWithMove = coerce PM.unsafePatchMapWithPatchingMove
 
@@ -198,17 +198,17 @@ instance Ord k => Patch (PatchMapWithMove k v) where
 patchMapWithMoveNewElements :: PatchMapWithMove k v -> [v]
 patchMapWithMoveNewElements = PM.patchMapWithPatchingMoveNewElements . unPatchMapWithMove'
 
--- | Return a @'Map' k v@ with all the inserts/updates from the given @'PatchMapWithMove' k v@.
+-- | Return a @'Map' k v@ with all the inserts/updates from the given @t'PatchMapWithMove' k v@.
 patchMapWithMoveNewElementsMap :: PatchMapWithMove k v -> Map k v
 patchMapWithMoveNewElementsMap = PM.patchMapWithPatchingMoveNewElementsMap . unPatchMapWithMove'
 
--- | Create a 'PatchMapWithMove' that, if applied to the given 'Map', will sort
+-- | Create a t'PatchMapWithMove' that, if applied to the given 'Map', will sort
 -- its values using the given ordering function.  The set keys of the 'Map' is
 -- not changed.
 patchThatSortsMapWith :: Ord k => (v -> v -> Ordering) -> Map k v -> PatchMapWithMove k v
 patchThatSortsMapWith cmp = PatchMapWithMove' . PM.patchThatSortsMapWith cmp
 
--- | Create a 'PatchMapWithMove' that, if applied to the first 'Map' provided,
+-- | Create a t'PatchMapWithMove' that, if applied to the first 'Map' provided,
 -- will produce a 'Map' with the same values as the second 'Map' but with the
 -- values sorted with the given ordering function.
 patchThatChangesAndSortsMapWith :: (Ord k, Ord v) => (v -> v -> Ordering) -> Map k v -> Map k v -> PatchMapWithMove k v
@@ -216,7 +216,7 @@ patchThatChangesAndSortsMapWith cmp oldByIndex newByIndexUnsorted = patchThatCha
   where newList = Map.toList newByIndexUnsorted
         newByIndex = Map.fromList $ zip (fst <$> newList) $ sortBy cmp $ snd <$> newList
 
--- | Create a 'PatchMapWithMove' that, if applied to the first 'Map' provided,
+-- | Create a t'PatchMapWithMove' that, if applied to the first 'Map' provided,
 -- will produce the second 'Map'.
 patchThatChangesMap :: (Ord k, Ord v) => Map k v -> Map k v -> PatchMapWithMove k v
 patchThatChangesMap oldByIndex newByIndex = PatchMapWithMove' $
@@ -262,6 +262,7 @@ instance Foldable (NodeInfo k) where
 instance Traversable (NodeInfo k) where
   traverse = bitraverseNodeInfo pure
 
+-- | Like 'Data.Bitraversable.bitraverse'
 bitraverseNodeInfo
   :: Applicative f
   => (k0 -> f k1)
@@ -271,11 +272,11 @@ bitraverseNodeInfo fk fv = fmap NodeInfo'
   . PM.bitraverseNodeInfo fk (\ ~Proxy -> pure Proxy) fv
   . coerce
 
--- | Change the 'From' value of a 'NodeInfo'
+-- | Change the 'From' value of a t'NodeInfo'
 nodeInfoMapFrom :: (From k v -> From k v) -> NodeInfo k v -> NodeInfo k v
 nodeInfoMapFrom f = coerce $ PM.nodeInfoMapFrom (unFrom' . f . From')
 
--- | Change the 'From' value of a 'NodeInfo', using a 'Functor' (or
+-- | Change the 'From' value of a t'NodeInfo', using a 'Functor' (or
 -- 'Applicative', 'Monad', etc.) action to get the new value
 nodeInfoMapMFrom
   :: Functor f
@@ -285,7 +286,7 @@ nodeInfoMapMFrom f = fmap NodeInfo'
   . PM.nodeInfoMapMFrom (fmap unFrom' . f . From')
   . coerce
 
--- | Set the 'To' field of a 'NodeInfo'
+-- | Set the 'To' field of a t'NodeInfo'
 nodeInfoSetTo :: To k -> NodeInfo k v -> NodeInfo k v
 nodeInfoSetTo = coerce . PM.nodeInfoSetTo
 
@@ -310,6 +311,7 @@ pattern From_Delete = From' PM.From_Delete
 pattern From_Move :: k -> From k v
 pattern From_Move k = From' (PM.From_Move k Proxy)
 
+-- | Like 'Data.Bitraversable.bitraverse'
 bitraverseFrom
   :: Applicative f
   => (k0 -> f k1)

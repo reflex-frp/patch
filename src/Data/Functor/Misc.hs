@@ -61,8 +61,9 @@ import Data.Typeable hiding (Refl)
 -- Const2
 --------------------------------------------------------------------------------
 
--- | 'Const2' stores a value of a given type 'k' and ensures that a particular
--- type 'v' is always given for the last type parameter
+-- | @'Const2' k v v@ stores a value of a given type @k@ and ensures
+-- that a particular type @v@ is always given for the last type
+-- parameter
 data Const2 :: Type -> x -> x -> Type where
   Const2 :: k -> Const2 k v v
   deriving (Typeable)
@@ -227,9 +228,10 @@ dsumToEither = \case
 -- ComposeMaybe
 --------------------------------------------------------------------------------
 
--- | We can't use @Compose Maybe@ instead of 'ComposeMaybe', because that would
--- make the 'f' parameter have a nominal type role.  We need f to be
--- representational so that we can use safe 'coerce'.
+-- | We can't use @'Data.Functor.Compose.Compose' 'Maybe'@ instead of @'ComposeMaybe'@,
+-- because that would make the @f@ parameter have a nominal type role.
+-- We need @f@ to be representational so that we can use safe
+-- @'Data.Coerce.coerce'@.
 newtype ComposeMaybe f a =
   ComposeMaybe { getComposeMaybe :: Maybe (f a) } deriving (Show, Eq, Ord)
 

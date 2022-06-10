@@ -4,11 +4,21 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Data.Patch.PatchOrReplacement where
+{-|
+Description: A 'Patch' combinator type for patching or replacing with a separate new value.
+-}
+module Data.Patch.PatchOrReplacement
+  ( PatchOrReplacement (..)
+  , _PatchOrReplacement_Patch
+  , _PatchOrReplacement_Replacement
+  , traversePatchOrReplacement
+  ) where
 
+import Control.Lens.TH (makePrisms)
 import Data.Patch
 #if !MIN_VERSION_base(4,11,0)
 import Data.Semigroup (Semigroup (..))
@@ -34,13 +44,18 @@ deriving instance (Ord p, Ord (PatchTarget p)) => Ord (PatchOrReplacement p)
 deriving instance (Show p, Show (PatchTarget p)) => Show (PatchOrReplacement p)
 deriving instance (Read p, Read (PatchTarget p)) => Read (PatchOrReplacement p)
 
-completePatchOrReplacement :: PatchOrReplacement p -> Maybe (PatchTarget p)
-completePatchOrReplacement = \case
-  PatchOrReplacement_Replacement t -> Just t
-  PatchOrReplacement_Patch _ -> Nothing
+-- | Traverse a 'PatchOrReplacement' with a function for each case
+traversePatchOrReplacement
+  :: Functor f
+  => (a -> f b)
+  -> (PatchTarget a -> f (PatchTarget b))
+  -> PatchOrReplacement a -> f (PatchOrReplacement b)
+traversePatchOrReplacement f g = \case
+  PatchOrReplacement_Patch p -> PatchOrReplacement_Patch <$> f p
+  PatchOrReplacement_Replacement p -> PatchOrReplacement_Replacement <$> g p
 
--- | To apply a 'PatchOrReplacement p' apply the the underlying 'p' or
--- substitute the replacement 'PatchTarget p'.
+-- | To apply a @'PatchOrReplacement' p@ apply the the underlying @p@ or
+-- substitute the replacement @'PatchTarget' p@.
 instance Patch p => Patch (PatchOrReplacement p) where
   type PatchTarget (PatchOrReplacement p) = PatchTarget p
   apply = \case
@@ -61,3 +76,5 @@ instance (Semigroup p, Patch p) => Semigroup (PatchOrReplacement p) where
     (PatchOrReplacement_Patch a, PatchOrReplacement_Patch b) -> PatchOrReplacement_Patch $ a <> b
     (PatchOrReplacement_Patch a, PatchOrReplacement_Replacement b) -> PatchOrReplacement_Replacement $ applyAlways a b
     (PatchOrReplacement_Replacement a, _) -> PatchOrReplacement_Replacement a
+
+makePrisms ''PatchOrReplacement
