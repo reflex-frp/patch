@@ -52,7 +52,7 @@ module Data.Patch.MapWithPatchingMove
 
 import Data.Patch.Class
 
-import Control.Lens hiding (from, to)
+import Control.Lens ((<&>))
 import Control.Lens.TH (makeWrapped)
 import Data.Align (align)
 import Data.Foldable (toList)
