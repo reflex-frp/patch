@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+* Add `PatchOrReplacement`, patch which either is some other patch type or a
+  new replacement value.
+
 * Support GHC 9.2
 
 ## 0.0.5.2 - 2022-01-09
