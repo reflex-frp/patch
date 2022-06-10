@@ -22,6 +22,8 @@ import GHC.Generics
 -- inefficiently. 'PatchOrReplacement' can be used as an escape hatch:
 -- when the change as a patch would be too big, just provide a new value
 -- to replace the old one with instead.
+--
+-- @since 0.0.6
 data PatchOrReplacement p
   = PatchOrReplacement_Patch p
   | PatchOrReplacement_Replacement (PatchTarget p)
@@ -37,8 +39,8 @@ completePatchOrReplacement = \case
   PatchOrReplacement_Replacement t -> Just t
   PatchOrReplacement_Patch _ -> Nothing
 
--- | 'PatchOrReplacement p' is a patch when we can apply the patch or
--- replace the old value with the new replacement value.
+-- | To apply a 'PatchOrReplacement p' apply the the underlying 'p' or
+-- substitute the replacement 'PatchTarget p'.
 instance Patch p => Patch (PatchOrReplacement p) where
   type PatchTarget (PatchOrReplacement p) = PatchTarget p
   apply = \case
