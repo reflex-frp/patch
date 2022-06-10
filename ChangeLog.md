@@ -1,6 +1,6 @@
 # Revision history for patch
 
-## Unreleased
+## 0.0.6.0 - 2022-06-10
 
 * Add `PatchOrReplacement`, patch which either is some other patch type or a
   new replacement value.
