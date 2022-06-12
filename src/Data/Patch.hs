@@ -24,7 +24,7 @@ import Data.Semigroup (Semigroup (..))
 #endif
 import GHC.Generics
 
-import Data.Semigroup.Additive as X
+import qualified Data.Semigroup.Additive as X
 import Data.Patch.Class as X
 import Data.Patch.DMap as X hiding (getDeletions)
 import Data.Patch.DMapWithMove as X
