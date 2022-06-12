@@ -1,5 +1,5 @@
 Name: patch
-Version: 0.0.5.2
+Version: 0.0.6.0
 Synopsis: Data structures for describing changes to other data structures.
 Description:
   Data structures for describing changes to other data structures.
@@ -58,6 +58,7 @@ library
                  , Data.Patch.Map
                  , Data.Patch.MapWithMove
                  , Data.Patch.MapWithPatchingMove
+                 , Data.Patch.PatchOrReplacement
                  , Data.Semigroup.Additive
 
   ghc-options: -Wall -fwarn-redundant-constraints -fwarn-tabs

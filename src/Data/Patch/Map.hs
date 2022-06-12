@@ -19,7 +19,9 @@ module Data.Patch.Map where
 import Data.Patch.Class
 
 import Control.Lens hiding  (FunctorWithIndex, FoldableWithIndex, TraversableWithIndex)
+#if !MIN_VERSION_lens(5,0,0)
 import qualified Control.Lens as L
+#endif
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
