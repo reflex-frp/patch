@@ -9,12 +9,30 @@
   orphan for backwards compat, temporarily, but it should eventually be removed
   everywhere.
 
-* `Additive` is still defined, because the `Abelian` from `groups` has too
-  stringent a constraint.
+## Unreleased
+
+* Use `commutative-semigroups` for `Commutative`, making `Additive` a
+  deprecated alias.
+
+## 0.0.6.0 - 2022-06-10
+
+* Add `PatchOrReplacement`, patch which either is some other patch type or a
+  new replacement value.
+
+* Support GHC 9.2
+
+## 0.0.5.2 - 2022-01-09
+
+* Correct field order of `PatchMapWithMove.NodeInfo`.
+
+  When we this was reimplemented as a pattern synonym wrapper in 0.0.5.0, we
+  accidentally flipped the argument order. Reversing it now to match 0.0.4.0
+  and restore compatibility. The previous releases in the 0.0.5.\* series will
+  correspondingly be deprecated.
 
 ## 0.0.5.1 - 2021-12-28
 
-* New dep of `data-orphans` for old GHC to get instances honestly instead of
+* New dep of `base-orphans` for old GHC to get instances honestly instead of
   via `monoidal-containers`.
 
 ## 0.0.5.0 - 2021-12-17

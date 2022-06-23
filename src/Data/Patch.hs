@@ -15,7 +15,7 @@ module Data.Patch
 import Data.Semigroup (Semigroup (..))
 #endif
 
-import Data.Semigroup.Additive as X
+import qualified Data.Semigroup.Additive as X
 import Data.Patch.Class as X
 import Data.Patch.DMap as X hiding (getDeletions)
 import Data.Patch.DMapWithMove as X
@@ -32,9 +32,9 @@ import Data.Patch.MapWithMove as X
   , unsafePatchMapWithMove
   )
 
--- | The elements of an 'Additive' 'Semigroup' can be considered as patches of their own type.
+-- | The elements of an 'Commutative' 'Semigroup' can be considered as patches of their own type.
 newtype AdditivePatch p = AdditivePatch { unAdditivePatch :: p }
 
-instance Additive p => Patch (AdditivePatch p) where
+instance Commutative p => Patch (AdditivePatch p) where
   type PatchTarget (AdditivePatch p) = p
   apply (AdditivePatch p) q = Just $ p <> q
