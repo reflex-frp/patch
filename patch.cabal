@@ -48,12 +48,15 @@ library
   if impl(ghc < 8.6) -- really, if base < 8.12
     build-depends: base-orphans >= 0.8 && < 0.9
 
-  exposed-modules: Data.Functor.Misc
+  exposed-modules: Control.Category.DecidablyEmpty
+                 , Data.Functor.Misc
                  , Data.Monoid.DecidablyEmpty
                  , Data.Patch
                  , Data.Patch.Class
                  , Data.Patch.DMap
                  , Data.Patch.DMapWithMove
+                 , Data.Patch.DMapWithPatchingMove
+                 , Data.Patch.DMapWithPatchingMove.By
                  , Data.Patch.IntMap
                  , Data.Patch.Map
                  , Data.Patch.MapWithMove
@@ -66,6 +69,7 @@ library
 
   if flag(split-these)
     build-depends: these >= 1 && <1.2
+                 , these-lens >= 1 && <1.1
                  , semialign >=1 && <1.3
                  , monoidal-containers >= 0.6 && < 0.7
   else

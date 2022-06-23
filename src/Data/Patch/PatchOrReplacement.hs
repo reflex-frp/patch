@@ -56,8 +56,14 @@ traversePatchOrReplacement f g = \case
 
 -- | To apply a @'PatchOrReplacement' p@ apply the the underlying @p@ or
 -- substitute the replacement @'PatchTarget' p@.
-instance Patch p => Patch (PatchOrReplacement p) where
+instance PatchHet p => PatchHet (PatchOrReplacement p) where
+  type PatchSource (PatchOrReplacement p) = PatchSource p
   type PatchTarget (PatchOrReplacement p) = PatchTarget p
+  applyHet = \case
+    PatchOrReplacement_Patch p -> applyHet p
+    PatchOrReplacement_Replacement v -> \_ -> Right v
+
+instance Patch p => Patch (PatchOrReplacement p) where
   apply = \case
     PatchOrReplacement_Patch p -> apply p
     PatchOrReplacement_Replacement v -> \_ -> Just v

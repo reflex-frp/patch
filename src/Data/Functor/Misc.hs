@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -21,6 +21,7 @@ are relevant to the use of 'Functor'-based datastructures like
 module Data.Functor.Misc
   ( -- * Const2
     Const2 (..)
+  , First2 (..)
   , unConst2
   , dmapToMap
   , dmapToIntMap
@@ -52,6 +53,7 @@ import qualified Data.IntMap as IntMap
 import Data.Kind (Type)
 import Data.Map (Map)
 import qualified Data.Map as Map
+import qualified Data.Semigroupoid as Cat
 import Data.Some (Some, mkSome)
 import Data.These
 import Data.Type.Equality ((:~:)(Refl))
@@ -68,14 +70,14 @@ data Const2 :: Type -> x -> x -> Type where
   Const2 :: k -> Const2 k v v
   deriving (Typeable)
 
--- | Extract the value from a Const2
-unConst2 :: Const2 k v v' -> k
-unConst2 (Const2 k) = k
-
 deriving instance Eq k => Eq (Const2 k v v')
 deriving instance Ord k => Ord (Const2 k v v')
 deriving instance Show k => Show (Const2 k v v')
 deriving instance Read k => Read (Const2 k v v)
+
+-- | Extract the value from a Const2
+unConst2 :: Const2 k v v' -> k
+unConst2 (Const2 k) = k
 
 instance Show k => GShow (Const2 k v) where
   gshowsPrec n x@(Const2 _) = showsPrec n x
@@ -91,6 +93,14 @@ instance Ord k => GCompare (Const2 k v) where
     LT -> GLT
     EQ -> GEQ
     GT -> GGT
+
+newtype First2 (t :: k -> Type) (a :: k) (b :: k) = First2 (t b)
+  deriving ( Show, Read, Eq, Ord
+           , Functor, Foldable, Traversable
+           )
+
+instance Cat.Semigroupoid (First2 x) where
+  First2 x `o` ~(First2 _) = First2 x
 
 -- | Convert a 'DMap' to a regular 'Map'
 dmapToMap :: DMap (Const2 k v) Identity -> Map k v

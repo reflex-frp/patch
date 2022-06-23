@@ -174,8 +174,11 @@ unsafePatchMapWithPatchingMove
 unsafePatchMapWithPatchingMove = PatchMapWithPatchingMove
 
 -- | Apply the insertions, deletions, and moves to a given 'Map'
-instance (Ord k, Patch p) => Patch (PatchMapWithPatchingMove k p) where
+instance (Ord k, Patch p) => PatchHet (PatchMapWithPatchingMove k p) where
+  type PatchSource (PatchMapWithPatchingMove k p) = Map k (PatchSource p)
   type PatchTarget (PatchMapWithPatchingMove k p) = Map k (PatchTarget p)
+
+instance (Ord k, Patch p) => Patch (PatchMapWithPatchingMove k p) where
   -- TODO: return Nothing sometimes
   -- Note: the strict application here is critical to ensuring that incremental
   -- merges don't hold onto all their prerequisite events forever; can we make
@@ -381,7 +384,10 @@ instance ( Ord k
             -> [ (toAfter, Fixup_Update (This editBefore))
                , (fromBefore, Fixup_Update (That mToAfter))
                ]
-        (Nothing, From_Move fromBefore _) -> [(fromBefore, Fixup_Update (That mToAfter))] -- The item is destroyed in the second patch, so indicate that it is destroyed in the source map
+        (Nothing, From_Move fromBefore _) ->
+           -- The item is destroyed in the second patch, so indicate that it is
+           -- destroyed in the source map
+           [(fromBefore, Fixup_Update (That mToAfter))]
         (Just toAfter, _) -> [(toAfter, Fixup_Update (This editBefore))]
         (Nothing, _) -> []
       mergeFixups _ Fixup_Delete Fixup_Delete = Fixup_Delete

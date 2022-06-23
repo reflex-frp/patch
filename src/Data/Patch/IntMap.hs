@@ -47,8 +47,10 @@ deriving instance Semigroup (PatchIntMap v)
 makeWrapped ''PatchIntMap
 
 -- | Apply the insertions or deletions to a given 'IntMap'.
-instance Patch (PatchIntMap a) where
+instance PatchHet (PatchIntMap a) where
+  type PatchSource (PatchIntMap a) = IntMap a
   type PatchTarget (PatchIntMap a) = IntMap a
+instance Patch (PatchIntMap a) where
   apply (PatchIntMap p) v = if IntMap.null p then Nothing else Just $
     let removes = IntMap.filter isNothing p
         adds = IntMap.mapMaybe id p

@@ -190,8 +190,11 @@ unsafePatchMapWithMove :: Map k (NodeInfo k v) -> PatchMapWithMove k v
 unsafePatchMapWithMove = coerce PM.unsafePatchMapWithPatchingMove
 
 -- | Apply the insertions, deletions, and moves to a given 'Map'
-instance Ord k => Patch (PatchMapWithMove k v) where
+instance Ord k => PatchHet (PatchMapWithMove k v) where
+  type PatchSource (PatchMapWithMove k v) = Map k v
   type PatchTarget (PatchMapWithMove k v) = Map k v
+
+instance Ord k => Patch (PatchMapWithMove k v) where
   apply (PatchMapWithMove' p) = apply p
 
 -- | Returns all the new elements that will be added to the 'Map'.

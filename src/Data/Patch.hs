@@ -33,6 +33,12 @@ import Data.Patch.DMapWithMove as X
   , traversePatchDMapWithMoveWithKey, unPatchDMapWithMove
   , unsafePatchDMapWithMove, weakenPatchDMapWithMoveWith
   )
+import Data.Patch.DMapWithPatchingMove as X
+  ( PatchDMapWithPatchingMove, const2PatchDMapWithPatchingMoveWith, mapPatchDMapWithPatchingMove
+  , patchDMapWithPatchingMoveToPatchMapWithPatchingMoveWith
+  , traversePatchDMapWithPatchingMoveWithKey, unPatchDMapWithPatchingMove
+  , unsafePatchDMapWithPatchingMove, weakenPatchDMapWithPatchingMoveWith
+  )
 import Data.Patch.IntMap as X hiding (getDeletions)
 import Data.Patch.Map as X
 import Data.Patch.MapWithMove as X
@@ -50,8 +56,10 @@ class (Semigroup q, Monoid q) => Group q where
 -- | The elements of an 'Commutative' 'Semigroup' can be considered as patches of their own type.
 newtype AdditivePatch p = AdditivePatch { unAdditivePatch :: p }
 
-instance Commutative p => Patch (AdditivePatch p) where
+instance Commutative p => PatchHet (AdditivePatch p) where
+  type PatchSource (AdditivePatch p) = p
   type PatchTarget (AdditivePatch p) = p
+instance Commutative p => Patch (AdditivePatch p) where
   apply (AdditivePatch p) q = Just $ p <> q
 
 instance (Ord k, Group q) => Group (MonoidalMap k q) where
@@ -59,8 +67,8 @@ instance (Ord k, Group q) => Group (MonoidalMap k q) where
 
 -- | Trivial group.
 instance Group () where
-  negateG _ = ()
-  _ ~~ _ = ()
+  negateG ~() = ()
+  ~() ~~ ~() = ()
 
 -- | Product group.  A Pair of groups gives rise to a group
 instance (Group a, Group b) => Group (a, b) where
@@ -81,8 +89,8 @@ instance (Group (f a), Group (g a)) => Group ((f :*: g) a) where
 
 -- | Trivial group, Functor style
 instance Group (Proxy x) where
-  negateG _ = Proxy
-  _ ~~ _ = Proxy
+  negateG ~Proxy = Proxy
+  ~Proxy ~~ ~Proxy = Proxy
 
 -- | Const lifts groups into a functor.
 deriving instance Group a => Group (Const a x)
