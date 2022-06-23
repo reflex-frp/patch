@@ -11,8 +11,12 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
--- | 'Patch'es on 'Map' that can insert, delete, and move values from one key to
--- another
+{-|
+Description: An advanced 'Patch' on 'Map'
+
+Patches of this type can can insert, delete, and move values from one key to
+another, and move patches may also additionally patch the value being moved.
+-}
 module Data.Patch.MapWithPatchingMove
   ( PatchMapWithPatchingMove (..)
   , patchMapWithPatchingMove
@@ -48,10 +52,10 @@ module Data.Patch.MapWithPatchingMove
 
 import Data.Patch.Class
 
-import Control.Arrow
+import Control.Lens ((<&>))
 import Control.Lens.TH (makeWrapped)
-import Control.Monad.Trans.State
-import Data.Foldable
+import Data.Align (align)
+import Data.Foldable (toList)
 import Data.Function
 import Data.List
 import Data.Map (Map)
@@ -61,9 +65,9 @@ import Data.Maybe
 import Data.Semigroup (Semigroup (..))
 #endif
 import Data.Monoid.DecidablyEmpty
+import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.These (These (..))
-import Data.Tuple
 
 -- | Patch a Map with additions, deletions, and moves.  Invariant: If key @k1@
 -- is coming from @From_Move k2@, then key @k2@ should be going to @Just k1@,
@@ -232,39 +236,40 @@ patchThatChangesAndSortsMapWith cmp oldByIndex newByIndexUnsorted = patchThatCha
 
 -- | Create a 'PatchMapWithPatchingMove' that, if applied to the first 'Map' provided,
 -- will produce the second 'Map'.
+-- Note: this will never produce a patch on a value.
 patchThatChangesMap
-  :: (Ord k, Ord (PatchTarget p), Monoid p)
+  :: forall k p
+  .  (Ord k, Ord (PatchTarget p), Monoid p)
   => Map k (PatchTarget p) -> Map k (PatchTarget p) -> PatchMapWithPatchingMove k p
 patchThatChangesMap oldByIndex newByIndex = patch
-  where oldByValue = Map.fromListWith Set.union $ swap . first Set.singleton <$> Map.toList oldByIndex
-        (insertsAndMoves, unusedValuesByValue) = flip runState oldByValue $ do
-          let f k v = do
-                remainingValues <- get
-                let putRemainingKeys remainingKeys = put $ if Set.null remainingKeys
-                      then Map.delete v remainingValues
-                      else Map.insert v remainingKeys remainingValues
-                case Map.lookup v remainingValues of
-                  Nothing -> return $ NodeInfo (From_Insert v) $ Just undefined -- There's no existing value we can take
-                  Just fromKs ->
-                    if k `Set.member` fromKs
-                    then do
-                      putRemainingKeys $ Set.delete k fromKs
-                      return $ NodeInfo (From_Move k mempty) $ Just undefined -- There's an existing value, and it's here, so no patch necessary
-                    else do
-                      (fromK, remainingKeys) <- return $
-                        fromMaybe (error "PatchMapWithPatchingMove.patchThatChangesMap: impossible: fromKs was empty") $
-                        Set.minView fromKs -- There's an existing value, but it's not here; move it here
-                      putRemainingKeys remainingKeys
-                      return $ NodeInfo (From_Move fromK mempty) $ Just undefined
-          Map.traverseWithKey f newByIndex
-        unusedOldKeys = fold unusedValuesByValue
-        pointlessMove k = \case
-          From_Move k' _ | k == k' -> True
-          _ -> False
-        keyWasMoved k = if k `Map.member` oldByIndex && not (k `Set.member` unusedOldKeys)
-          then Just undefined
-          else Nothing
-        patch = unsafePatchMapWithPatchingMove $ Map.filterWithKey (\k -> not . pointlessMove k . _nodeInfo_from) $ Map.mergeWithKey (\k a _ -> Just $ nodeInfoSetTo (keyWasMoved k) a) (Map.mapWithKey $ \k -> nodeInfoSetTo $ keyWasMoved k) (Map.mapWithKey $ \k _ -> NodeInfo From_Delete $ keyWasMoved k) insertsAndMoves oldByIndex
+  where invert :: Map k (PatchTarget p) -> Map (PatchTarget p) (Set k)
+        invert = Map.fromListWith (<>) . fmap (\(k, v) -> (v, Set.singleton k)) . Map.toList
+        -- In the places where we use unionDistinct, a non-distinct key indicates a bug in this function
+        unionDistinct :: forall k' v'. Ord k' => Map k' v' -> Map k' v' -> Map k' v'
+        unionDistinct = Map.unionWith (error "patchThatChangesMap: non-distinct keys")
+        unionPairDistinct :: (Map k (From k v), Map k (To k)) -> (Map k (From k v), Map k (To k)) -> (Map k (From k v), Map k (To k))
+        unionPairDistinct (oldFroms, oldTos) (newFroms, newTos) = (unionDistinct oldFroms newFroms, unionDistinct oldTos newTos)
+        -- Generate patch info for a single value
+        -- Keys that are found in both the old and new sets will not be patched
+        -- Keys that are found in only the old set will be moved to a new position if any are available; otherwise they will be deleted
+        -- Keys that are found in only the new set will be populated by moving an old key if any are available; otherwise they will be inserted
+        patchSingleValue :: PatchTarget p -> Set k -> Set k -> (Map k (From k p), Map k (To k))
+        patchSingleValue v oldKeys newKeys = foldl' unionPairDistinct mempty $ align (toList $ oldKeys `Set.difference` newKeys) (toList $ newKeys `Set.difference` oldKeys) <&> \case
+          This oldK -> (mempty, Map.singleton oldK Nothing) -- There's nowhere for this value to go, so we know we are deleting it
+          That newK -> (Map.singleton newK $ From_Insert v, mempty) -- There's nowhere fo this value to come from, so we know we are inserting it
+          These oldK newK -> (Map.singleton newK $ From_Move oldK mempty, Map.singleton oldK $ Just newK)
+        -- Run patchSingleValue on a These.  Missing old or new sets are considered empty
+        patchSingleValueThese :: PatchTarget p -> These (Set k) (Set k) -> (Map k (From k p), Map k (To k))
+        patchSingleValueThese v = \case
+          This oldKeys -> patchSingleValue v oldKeys mempty
+          That newKeys -> patchSingleValue v mempty newKeys
+          These oldKeys newKeys -> patchSingleValue v oldKeys newKeys
+        -- Generate froms and tos for all values, then merge them together
+        (froms, tos) = foldl' unionPairDistinct mempty $ Map.mapWithKey patchSingleValueThese $ align (invert oldByIndex) (invert newByIndex)
+        patch = unsafePatchMapWithPatchingMove $ align froms tos <&> \case
+          This from -> NodeInfo from Nothing -- Since we don't have a 'to' record for this key, that must mean it isn't being moved anywhere, so it should be deleted.
+          That to -> NodeInfo From_Delete to -- Since we don't have a 'from' record for this key, it must be getting deleted
+          These from to -> NodeInfo from to
 
 --
 -- NodeInfo

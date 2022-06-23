@@ -8,18 +8,28 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
--- | 'Patch'es on 'Map' that consist only of insertions (including overwrites)
--- and deletions
+{-|
+Description: A basic 'Patch' on 'Map'
+
+Patches of this type consist only of insertions (including overwrites) and
+deletions.
+-}
 module Data.Patch.Map where
 
 import Data.Patch.Class
 
-import Control.Lens
+import Control.Lens hiding  (FunctorWithIndex, FoldableWithIndex, TraversableWithIndex)
+#if !MIN_VERSION_lens(5,0,0)
+import qualified Control.Lens as L
+#endif
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.Monoid.DecidablyEmpty
 import Data.Semigroup (Semigroup (..), stimesIdempotentMonoid)
+import Data.Functor.WithIndex
+import Data.Foldable.WithIndex
+import Data.Traversable.WithIndex
 
 -- | A set of changes to a 'Map'.  Any element may be inserted/updated or
 -- deleted.  Insertions are represented as values wrapped in 'Just', while
@@ -57,11 +67,18 @@ instance Ord k => Patch (PatchMap k v) where
             Nothing -> Just ()
             Just _ -> Nothing
 
+makeWrapped ''PatchMap
+
 instance FunctorWithIndex k (PatchMap k)
 instance FoldableWithIndex k (PatchMap k)
 instance TraversableWithIndex k (PatchMap k) where
-  itraverse = itraversed . Indexed
-  itraversed = _Wrapped .> itraversed <. traversed
+  itraverse = (_Wrapped .> itraversed <. traversed) . Indexed
+
+#if !MIN_VERSION_lens(5,0,0)
+instance L.FunctorWithIndex k    (PatchMap k) where imap = Data.Functor.WithIndex.imap
+instance L.FoldableWithIndex k   (PatchMap k) where ifoldMap = Data.Foldable.WithIndex.ifoldMap
+instance L.TraversableWithIndex k (PatchMap k) where itraverse = Data.Traversable.WithIndex.itraverse
+#endif
 
 -- | Returns all the new elements that will be added to the 'Map'
 patchMapNewElements :: PatchMap k v -> [v]
@@ -70,5 +87,3 @@ patchMapNewElements (PatchMap p) = catMaybes $ Map.elems p
 -- | Returns all the new elements that will be added to the 'Map'
 patchMapNewElementsMap :: PatchMap k v -> Map k v
 patchMapNewElementsMap (PatchMap p) = Map.mapMaybe id p
-
-makeWrapped ''PatchMap

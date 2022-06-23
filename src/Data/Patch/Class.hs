@@ -8,7 +8,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
--- | The interface for types which represent changes made to other types
+
+{-|
+Description: The module provides the 'Patch' class.
+
+This is a class for types which represent changes made to other types
+-}
 module Data.Patch.Class where
 
 import qualified Data.Semigroupoid as Cat
@@ -88,20 +93,20 @@ composePatchFunctions g f a =
   in g (applyAlways fp a) <> fp
 
 
-class PatchHet2Base (p :: k -> k -> *) where
-  type PatchSource1 p :: k -> *
-  type PatchTarget1 p :: k -> *
+class PatchHet2Base (p :: k -> k -> Type) where
+  type PatchSource1 p :: k -> Type
+  type PatchTarget1 p :: k -> Type
 
 class ( PatchHet2Base p
       , PatchHet (p from to)
       , PatchSource1 p from ~ PatchSource (p from to)
       , PatchTarget1 p to ~ PatchTarget (p from to)
-      ) => PatchHet2Locally (p :: k -> k -> *) from to where
+      ) => PatchHet2Locally (p :: k -> k -> Type) from to where
 instance ( PatchHet2Base p
          , PatchHet (p from to)
          , PatchSource1 p from ~ PatchSource (p from to)
          , PatchTarget1 p to ~ PatchTarget (p from to)
-         ) => PatchHet2Locally (p :: k -> k -> *) from to where
+         ) => PatchHet2Locally (p :: k -> k -> Type) from to where
 
 applyHet2Locally
   :: PatchHet2Locally p from to
@@ -119,7 +124,7 @@ applyAlwaysHet2Locally = applyAlwaysHet
 
 -- TODO once we can use quantified constraints, perhaps combine PatchHet2Base and
 -- PatchHet2Locally, or at least get rid of this.
-class PatchHet2Base p => PatchHet2 (p :: k -> k -> *) where
+class PatchHet2Base p => PatchHet2 (p :: k -> k -> Type) where
   applyHet2
     :: p from to
     -> PatchSource1 p from
@@ -155,17 +160,17 @@ instance ( PatchHet2Base p
          ) => Patch2 p
 
 -- | 'First2' can be used as a 'Patch' that always fully replaces the value
-instance PatchHet (First2 (t :: k -> *) (from :: k) (to :: k)) where
+instance PatchHet (First2 (t :: k -> Type) (from :: k) (to :: k)) where
   type PatchSource (First2 t from to) = t from
   type PatchTarget (First2 t from to) = t to
   applyHet (First2 val) _ = Right val
 
 -- | 'Proxy3' can be used as a 'Patch' that always does nothing
-instance PatchHet (Proxy3 (t :: k -> *) (a :: k) (a :: k)) where
+instance PatchHet (Proxy3 (t :: k -> Type) (a :: k) (a :: k)) where
   type PatchSource (Proxy3 t a a) = t a
   type PatchTarget (Proxy3 t a a) = t a
   applyHet ~Proxy3 _ = Left Refl
 
-instance PatchHet2Base (Proxy3 (t :: k -> *) :: k -> k -> *) where
+instance PatchHet2Base (Proxy3 (t :: k -> Type) :: k -> k -> Type) where
   type PatchSource1 (Proxy3 t) = t
   type PatchTarget1 (Proxy3 t) = t

@@ -37,6 +37,7 @@ import Data.Functor.Product (Product (..))
 import Data.GADT.Compare (GEq (..), GCompare (..))
 import Data.GADT.Show (GRead, GShow, gshow)
 import qualified Data.Map as Map
+import Data.Kind (Type)
 import Data.Maybe
 import Data.Monoid.DecidablyEmpty
 import Data.Semigroupoid as Cat
@@ -131,7 +132,7 @@ data NodeInfo k p a = NodeInfo
 -- This type isn't used directly as the from field patch, but is instead wrapped
 -- in an existential. However, it is nice to be able to reason about this in
 -- isolation as it is itself a @Semigroupoid@ when the underlying patch is.
-data From (k :: a -> *) (p :: a -> a -> *) :: a -> * where
+data From (k :: a -> Type) (p :: a -> a -> Type) :: a -> Type where
   -- | Insert a new or update an existing key with the given value @PatchTarget1
   -- p a@
   From_Insert :: PatchTarget1 p to -> From k p to
@@ -162,14 +163,14 @@ deriving instance ( GCompare k
 
 newtype Flip p to from = Flip (p from to)
 
-instance Cat.Category p => Cat.Category (Flip (p :: k -> k -> *)) where
+instance Cat.Category p => Cat.Category (Flip (p :: k -> k -> Type)) where
   id = Flip Cat.id
   Flip y . Flip x = Flip $ x Cat.. y
 
 -- | The "to" part of a 'NodeInfo'. Rather than be built out of @From@ like @From@
 -- is, we store just the information necessary to compose a @To@ and @From@ like
 -- @oLocal@ composes two @From@s.
-data To (k :: a -> *) where
+data To (k :: a -> Type) where
   -- | Delete or leave in place
   To_NonMove :: To k
   -- | Move the value from the given key @k a@ to this key. The target key

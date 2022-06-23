@@ -16,6 +16,7 @@
 
 module Data.Patch.DMapWithPatchingMove.By where
 
+import Data.Kind (Type)
 import Data.Semigroupoid as Cat
 
 import Data.Patch.Class
@@ -27,7 +28,7 @@ import Data.Patch.Class
 -- This type isn't used directly as the from field patch, but is instead wrapped
 -- in an existential. However, it is nice to be able to reason about this in
 -- isolation as it is itself a @Semigroupoid@ when the underlying patch is.
-data By (k :: a -> *) (p :: a -> a -> *) :: a -> a -> * where
+data By (k :: a -> Type) (p :: a -> a -> Type) :: a -> a -> Type where
   -- | Insert a new or update an existing key with the given value @PatchTarget1
   -- p a@
   By_Insert :: PatchTarget1 p to -> By k p from to

@@ -7,11 +7,17 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
--- | Module containing 'PatchIntMap', a 'Patch' for 'IntMap' which allows for
--- insert/update or delete of associations.
+{-|
+Description: Module containing 'PatchIntMap', a 'Patch' for 'IntMap'.
+
+Patches of this sort allow for insert/update or delete of associations.
+-}
 module Data.Patch.IntMap where
 
-import Control.Lens
+import Control.Lens hiding  (FunctorWithIndex, FoldableWithIndex, TraversableWithIndex)
+#if !MIN_VERSION_lens(5,0,0)
+import qualified Control.Lens as L
+#endif
 import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as IntMap
 import Data.Maybe
@@ -20,6 +26,9 @@ import Data.Monoid.DecidablyEmpty
 import Data.Semigroup (Semigroup (..))
 #endif
 import Data.Patch.Class
+import Data.Functor.WithIndex
+import Data.Foldable.WithIndex
+import Data.Traversable.WithIndex
 
 -- | 'Patch' for 'IntMap' which represents insertion or deletion of keys in the mapping.
 -- Internally represented by 'IntMap (Maybe a)', where @Just@ means insert/update
@@ -50,8 +59,13 @@ instance Patch (PatchIntMap a) where
 instance FunctorWithIndex Int PatchIntMap
 instance FoldableWithIndex Int PatchIntMap
 instance TraversableWithIndex Int PatchIntMap where
-  itraverse = itraversed . Indexed
-  itraversed = _Wrapped .> itraversed <. traversed
+  itraverse = (_Wrapped .> itraversed <. traversed) . Indexed
+
+#if !MIN_VERSION_lens(5,0,0)
+instance L.FunctorWithIndex     Int PatchIntMap where imap = Data.Functor.WithIndex.imap
+instance L.FoldableWithIndex    Int PatchIntMap where ifoldMap = Data.Foldable.WithIndex.ifoldMap
+instance L.TraversableWithIndex Int PatchIntMap where itraverse = Data.Traversable.WithIndex.itraverse
+#endif
 
 -- | Map a function @Int -> a -> b@ over all @a@s in the given @'PatchIntMap' a@
 -- (that is, all inserts/updates), producing a @PatchIntMap b@.

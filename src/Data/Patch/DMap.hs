@@ -7,7 +7,12 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
 
--- | 'Patch'es on 'DMap' that consist only of insertions (or overwrites) and deletions.
+{-|
+Description: A basic 'Patch' on 'DMap'
+
+Patches of this type consist only of insertions (including overwrites) and
+deletions.
+-}
 module Data.Patch.DMap where
 
 import Data.Patch.Class
