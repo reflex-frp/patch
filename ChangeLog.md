@@ -1,5 +1,14 @@
 # Revision history for patch
 
+## Unreleased
+
+* Stop defining `Group`; `Group` from the `groups` package can be used instead.
+
+  Most of the instances are provided by `groups`, except the `Group
+  MonoidalMap` instance, which is not lawful.  `reflex` might provide it as an
+  orphan for backwards compat, temporarily, but it should eventually be removed
+  everywhere.
+
 ## 0.0.7.0 - 2022-06-23
 
 * Use `commutative-semigroups` for `Commutative`, making `Additive` a
