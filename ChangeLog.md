@@ -1,6 +1,6 @@
 # Revision history for patch
 
-## Unreleased
+## 0.0.7.0 - 2022-06-23
 
 * Use `commutative-semigroups` for `Commutative`, making `Additive` a
   deprecated alias.
