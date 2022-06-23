@@ -2,14 +2,19 @@
 
 ## Unreleased
 
-Use other packages to avoid duplication / scope-creep:
-
- *  Use `groups` for `Group`
+* Use `groups` for `Group`
 
 ## Unreleased
 
- * Use `commutative-semigroups` for `Commutative`, making `Additive` a
-   deprecated alias.
+* Use `commutative-semigroups` for `Commutative`, making `Additive` a
+  deprecated alias.
+
+## 0.0.6.0 - 2022-06-10
+
+* Add `PatchOrReplacement`, patch which either is some other patch type or a
+  new replacement value.
+
+* Support GHC 9.2
 
 ## 0.0.5.2 - 2022-01-09
 

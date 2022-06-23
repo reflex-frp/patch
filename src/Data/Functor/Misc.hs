@@ -41,7 +41,6 @@ module Data.Functor.Misc
   , ComposeMaybe (..)
   ) where
 
-import Control.Applicative ((<$>))
 import Data.Dependent.Map (DMap)
 import qualified Data.Dependent.Map as DMap
 import Data.Dependent.Sum
@@ -50,6 +49,7 @@ import Data.GADT.Compare
 import Data.GADT.Show
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IntMap
+import Data.Kind (Type)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Some (Some, mkSome)
@@ -61,9 +61,10 @@ import Data.Typeable hiding (Refl)
 -- Const2
 --------------------------------------------------------------------------------
 
--- | 'Const2' stores a value of a given type 'k' and ensures that a particular
--- type 'v' is always given for the last type parameter
-data Const2 :: * -> x -> x -> * where
+-- | @'Const2' k v v@ stores a value of a given type @k@ and ensures
+-- that a particular type @v@ is always given for the last type
+-- parameter
+data Const2 :: Type -> x -> x -> Type where
   Const2 :: k -> Const2 k v v
   deriving (Typeable)
 
@@ -130,7 +131,7 @@ weakenDMapWith f = Map.fromDistinctAscList . map (\(k :=> v) -> (mkSome k, f v))
 -- | 'WrapArg' can be used to tag a value in one functor with a type
 -- representing another functor.  This was primarily used with dependent-map <
 -- 0.2, in which the value type was not wrapped in a separate functor.
-data WrapArg :: (k -> *) -> (k -> *) -> * -> * where
+data WrapArg :: (k -> Type) -> (k -> Type) -> Type -> Type where
   WrapArg :: f a -> WrapArg g f (g a)
 
 deriving instance Eq (f a) => Eq (WrapArg g f (g' a))
@@ -227,9 +228,10 @@ dsumToEither = \case
 -- ComposeMaybe
 --------------------------------------------------------------------------------
 
--- | We can't use @Compose Maybe@ instead of 'ComposeMaybe', because that would
--- make the 'f' parameter have a nominal type role.  We need f to be
--- representational so that we can use safe 'coerce'.
+-- | We can't use @'Data.Functor.Compose.Compose' 'Maybe'@ instead of @'ComposeMaybe'@,
+-- because that would make the @f@ parameter have a nominal type role.
+-- We need @f@ to be representational so that we can use safe
+-- @'Data.Coerce.coerce'@.
 newtype ComposeMaybe f a =
   ComposeMaybe { getComposeMaybe :: Maybe (f a) } deriving (Show, Eq, Ord)
 

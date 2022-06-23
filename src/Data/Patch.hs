@@ -16,8 +16,8 @@ module Data.Patch
 import Data.Semigroup.Commutative
 import Data.Map.Monoidal (MonoidalMap)
 
-import Data.Group as X (Group (..))
-import Data.Semigroup.Additive as X
+import qualified Data.Group as X (Group (..))
+import qualified Data.Semigroup.Additive as X
 import Data.Patch.Class as X
 import Data.Patch.DMap as X hiding (getDeletions)
 import Data.Patch.DMapWithMove as X
@@ -33,12 +33,6 @@ import Data.Patch.MapWithMove as X
   , patchMapWithMoveNewElementsMap, unPatchMapWithMove
   , unsafePatchMapWithMove
   )
-
--- | A 'Group' is a 'Monoid' where every element has an inverse.
-class (Semigroup q, Monoid q) => Group q where
-  negateG :: q -> q
-  (~~) :: q -> q -> q
-  r ~~ s = r <> negateG s
 
 -- | The elements of an 'Commutative' 'Semigroup' can be considered as patches of their own type.
 newtype AdditivePatch p = AdditivePatch { unAdditivePatch :: p }
