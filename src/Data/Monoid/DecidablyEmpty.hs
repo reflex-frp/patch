@@ -61,8 +61,10 @@ instance
 #endif
   => DecidablyEmpty (Maybe a) where
   isEmpty = isNothing
-deriving instance (Num a, DecidablyEmpty a) => DecidablyEmpty (Product a)
-deriving instance (DecidablyEmpty a, Num a) => DecidablyEmpty (Sum a)
+instance (Num a, Eq a) => DecidablyEmpty (Product a) where
+  isEmpty = (== 1)
+instance (Num a, Eq a) => DecidablyEmpty (Sum a) where
+  isEmpty = (== 0)
 deriving instance DecidablyEmpty a => DecidablyEmpty (Dual a)
 instance DecidablyEmpty (First a) where
   isEmpty (First a) = isNothing a

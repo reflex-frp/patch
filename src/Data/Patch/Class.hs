@@ -12,9 +12,13 @@ module Data.Patch.Class where
 import Data.Functor.Identity
 import Data.Kind (Type)
 import Data.Maybe
+import Data.Semigroup
+  ( Sum (..)
+  , Product (..)
 #if !MIN_VERSION_base(4,11,0)
-import Data.Semigroup (Semigroup(..))
+  , Semigroup(..)
 #endif
+  )
 import Data.Proxy
 
 -- | A 'Patch' type represents a kind of change made to a datastructure.
@@ -40,6 +44,14 @@ instance Patch (Identity a) where
 instance forall (a :: Type). Patch (Proxy a) where
   type PatchTarget (Proxy a) = a
   apply ~Proxy _ = Nothing
+
+instance (Num a, Eq a) => Patch (Sum a) where
+  type PatchTarget (Sum a) = a
+  apply (Sum a) b = if a == 0 then Nothing else Just $ a + b
+
+instance (Num a, Eq a) => Patch (Product a) where
+  type PatchTarget (Product a) = a
+  apply (Product a) b = if a == 1 then Nothing else Just $ a * b
 
 -- | Like '(.)', but composes functions that return patches rather than
 -- functions that return new values.  The Semigroup instance for patches must
