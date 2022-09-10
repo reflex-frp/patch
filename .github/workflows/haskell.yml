@@ -42,6 +42,7 @@ jobs:
     - name: Build
       run: cabal build --enable-tests --enable-benchmarks all
     - name: Run tests
-      run: cabal test --enable-tests all
+      # We don't run hlint tests, because different versions of hlint have different suggestions, and we don't want to worry about satisfying them all.
+      run: cabal test --enable-tests -f-hlint all
     - name: Build Docs
       run: cabal haddock
