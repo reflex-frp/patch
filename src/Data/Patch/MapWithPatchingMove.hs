@@ -23,6 +23,7 @@ module Data.Patch.MapWithPatchingMove
   , patchMapWithPatchingMoveInsertAll
   , insertMapKey
   , moveMapKey
+  , patchMapKey
   , swapMapKey
   , deleteMapKey
   , unsafePatchMapWithPatchingMove
@@ -134,6 +135,18 @@ moveMapKey src dst
         [ (dst, NodeInfo (From_Move src mempty) Nothing)
         , (src, NodeInfo From_Delete (Just dst))
         ]
+
+patchMapKey
+  :: ( DecidablyEmpty p
+#if !MIN_VERSION_base(4,11,0)
+     , Semigroup p
+#endif
+     )
+  => k -> p -> PatchMapWithPatchingMove k p
+patchMapKey k p
+  | isEmpty p = PatchMapWithPatchingMove Map.empty
+  | otherwise =
+      PatchMapWithPatchingMove $ Map.singleton k $ NodeInfo (From_Move k p) (Just k)
 
 -- |Make a @'PatchMapWithPatchingMove' k p@ which has the effect of swapping two keys in the mapping, equivalent to:
 --
