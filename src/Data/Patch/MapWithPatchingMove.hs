@@ -382,46 +382,78 @@ instance ( Ord k
          , DecidablyEmpty p
          , Patch p
          ) => Semigroup (PatchMapWithPatchingMove k p) where
-  PatchMapWithPatchingMove ma <> PatchMapWithPatchingMove mb = PatchMapWithPatchingMove m
+  PatchMapWithPatchingMove mNew <> PatchMapWithPatchingMove mOld = PatchMapWithPatchingMove m
     where
-      connections = Map.toList $ Map.intersectionWithKey (\_ a b -> (_nodeInfo_to a, _nodeInfo_from b)) ma mb
-      h :: (k, (Maybe k, From k p)) -> [(k, Fixup k p)]
-      h (_, (mToAfter, editBefore)) = case (mToAfter, editBefore) of
+      connections = Map.elems $ Map.intersectionWithKey (\_ new old -> (_nodeInfo_to new, _nodeInfo_from old)) mNew mOld
+      h :: (Maybe k, From k p) -> [(k, Fixup k p)]
+      h = \case
         (Just toAfter, From_Move fromBefore p)
           | fromBefore == toAfter && isEmpty p
-            -> [(toAfter, Fixup_Delete)]
-          | otherwise
-            -> [ (toAfter, Fixup_Update (This editBefore))
-               , (fromBefore, Fixup_Update (That mToAfter))
+            -> [ (toAfter, Fixup_Delete)
                ]
-        (Nothing, From_Move fromBefore _) -> [(fromBefore, Fixup_Update (That mToAfter))] -- The item is destroyed in the second patch, so indicate that it is destroyed in the source map
-        (Just toAfter, _) -> [(toAfter, Fixup_Update (This editBefore))]
+          | otherwise
+            -> [ (toAfter, Fixup_Update (This (From_Move fromBefore p)))
+               , (fromBefore, Fixup_Update (That (Just toAfter)))
+               ]
+        (Nothing, From_Move fromBefore _) -> [(fromBefore, Fixup_Update (That Nothing))] -- The item is destroyed in the second patch, so indicate that it is destroyed in the source map
+        (Just toAfter, editBefore) -> [(toAfter, Fixup_Update (This editBefore))]
         (Nothing, _) -> []
-      mergeFixups _ Fixup_Delete Fixup_Delete = Fixup_Delete
-      mergeFixups _ (Fixup_Update a) (Fixup_Update b)
+      mergeFixups Fixup_Delete Fixup_Delete = Fixup_Delete
+      mergeFixups (Fixup_Update a) (Fixup_Update b)
         | This x <- a, That y <- b
         = Fixup_Update $ These x y
         | That y <- a, This x <- b
         = Fixup_Update $ These x y
-      mergeFixups _ _ _ = error "PatchMapWithPatchingMove: incompatible fixups"
-      fixups = Map.fromListWithKey mergeFixups $ concatMap h connections
-      combineNodeInfos _ nia nib = NodeInfo
-        { _nodeInfo_from = _nodeInfo_from nia
-        , _nodeInfo_to = _nodeInfo_to nib
+      mergeFixups _ _ = error "PatchMapWithPatchingMove: incompatible fixups"
+      fixups = Map.fromListWithKey (\_ -> mergeFixups) $ concatMap h connections
+      combineNodeInfos niNew niOld = NodeInfo
+        { _nodeInfo_from = _nodeInfo_from niNew
+        , _nodeInfo_to = _nodeInfo_to niOld
         }
-      applyFixup _ ni = \case
+      applyFixup ni = \case
         Fixup_Delete -> Nothing
         Fixup_Update u -> Just $ NodeInfo
           { _nodeInfo_from = case _nodeInfo_from ni of
-              f@(From_Move _ p') -> case getHere u of -- The `from` fixup comes from the "old" patch
-                Nothing -> f -- If there's no `from` fixup, just use the "new" `from`
+              -- The new patch has a Move, so it could be affected by the
+              -- corresponding From in the old patch.  If that From exists, then
+              -- it is in the fixup here.
+              f@(From_Move _ p') -> case getHere u of
+                -- If there's no `From` fixup, just use the "new" `From`
+                Nothing -> f
+                -- If there's a `From` fixup which is an Insert, we can just apply
+                -- our patch to that and turn ourselves into an insert.
                 Just (From_Insert v) -> From_Insert $ applyAlways p' v
+                -- If there's a `From` fixup which is a Delete, then we can throw
+                -- our patch away because there's nothing to apply it to and
+                -- become a Delete ourselves.
                 Just From_Delete -> From_Delete
+                -- If there's a `From` fixup which is a Move, we need to apply
+                -- both the old patch and the new patch (in that order) to the
+                -- value, so we append the patches here.
                 Just (From_Move oldKey p) -> From_Move oldKey $ p' <> p
-              _ -> error "PatchMapWithPatchingMove: fixup for non-move From"
-          , _nodeInfo_to = fromMaybe (_nodeInfo_to ni) $ getThere u
+              -- If the new patch has an Insert, it doesn't care what the fixup
+              -- value is, because it will overwrite it anyway.
+              f@(From_Insert _) -> f
+              -- If the new patch has an Delete, it doesn't care what the fixup
+              -- value is, because it will overwrite it anyway.
+              f@From_Delete -> f
+          , _nodeInfo_to = case _nodeInfo_to ni of
+              -- The old patch deletes this data, so we must delete it as well.
+              -- According to the code above, any time we have this situation we
+              -- should also have `getThere u == Nothing` because a fixup
+              -- shouldn't be generated.
+              Nothing -> Nothing
+              -- The old patch sends the value to oldToAfter
+              Just oldToAfter -> case getThere u of
+                -- If there is no fixup, that should mean that the new patch
+                -- doesn't do anything with the value in oldToAfter, so we still
+                -- send it to oldToAfter
+                Nothing -> Just oldToAfter
+                -- If there is a fixup, it should tell us where the new patch
+                -- sends the value at key oldToAfter.  We send our value there.
+                Just mNewToAfter -> mNewToAfter
           }
-      m = Map.differenceWithKey applyFixup (Map.unionWithKey combineNodeInfos ma mb) fixups
+      m = Map.differenceWithKey (\_ -> applyFixup) (Map.unionWith combineNodeInfos mNew mOld) fixups
       getHere :: These a b -> Maybe a
       getHere = \case
         This a -> Just a
