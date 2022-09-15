@@ -22,12 +22,16 @@ extra-source-files:
   ChangeLog.md
 
 tested-with:
-  GHC ==8.0.2 || ==8.2.2 || ==8.4.4 || ==8.6.5 || ==8.8.4 || ==8.10.7 || ==9.0.1 || ==9.2.2
+  GHC ==8.4.4 || ==8.6.5 || ==8.8.4 || ==8.10.7 || ==9.0.1 || ==9.2.2
   GHCJS ==8.4
 
 flag split-these
   description: Use split these/semialign packages
   manual:      False
+  default:     True
+
+flag hlint
+  description: Enable hlint test
   default:     True
 
 library
@@ -95,7 +99,7 @@ test-suite hlint
                , filepath
                , filemanip
                , hlint (< 2.1 || >= 2.2.2) && < 3.5
-  if impl(ghcjs)
+  if impl(ghcjs) || !flag(hlint)
     buildable: False
 
 source-repository head
