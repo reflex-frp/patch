@@ -98,7 +98,11 @@ test-suite hlint
                , directory
                , filepath
                , filemanip
-               , hlint (< 2.1 || >= 2.2.2) && < 3.5
+  if impl(ghc < 9.2)
+    build-depends: hlint (< 2.1 || >= 2.2.2) && < 3.5
+  else
+    build-depends: hlint >= 3.5 && < 3.6
+
   if impl(ghcjs) || !flag(hlint)
     buildable: False
 
