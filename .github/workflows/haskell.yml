@@ -18,7 +18,7 @@ jobs:
       with:
         ghc-version: ${{ matrix.ghc }}
     - name: Cache
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       env:
         cache-name: cache-cabal
       with:
