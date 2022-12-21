@@ -22,8 +22,8 @@ extra-source-files:
   ChangeLog.md
 
 tested-with:
-  GHC ==8.4.4 || ==8.6.5 || ==8.8.4 || ==8.10.7 || ==9.0.1 || ==9.2.2 || ==9.4.3
-  GHCJS ==8.4
+  GHC ==8.4.4 || ==8.6.5 || ==8.8.4 || ==8.10.7 || ==9.0.1 || ==9.2.5 || ==9.4.3
+  GHCJS ==8.6 || ==8.10
 
 flag split-these
   description: Use split these/semialign packages
@@ -103,7 +103,7 @@ test-suite hlint
   else
     build-depends: hlint >= 3.5 && < 3.6
 
-  if impl(ghcjs) || !flag(hlint) || os(darwin) && impl(ghc >= 9.2) && impl(ghc < 9.4)
+  if impl(ghcjs) || !flag(hlint)
     buildable: False
 
 source-repository head
