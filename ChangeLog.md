@@ -1,5 +1,9 @@
 # Revision history for patch
 
+## 0.0.8.1
+
+* Add support for GHC 9.2 and 9.4
+
 ## 0.0.8.0 - 2022-12-09
 
 * Drop support for GHC 8.0 and 8.2.  It may still be possible to use this library with those versions of GHC, but we do not guarantee or test it anymore.
