@@ -2,12 +2,12 @@
 }:
 
 let
-  native-reflex-platform = reflex-platform-fun {};
+  native-reflex-platform = reflex-platform-fun { __useNewerCompiler = true; };
   inherit (native-reflex-platform.nixpkgs) lib;
   systems = ["x86_64-linux" "x86_64-darwin"];
 
   perPlatform = lib.genAttrs systems (system: let
-    reflex-platform = reflex-platform-fun { inherit system; };
+    reflex-platform = reflex-platform-fun { inherit system; __useNewerCompiler = true; };
     compilers = [
       "ghc"
       "ghcjs"
@@ -20,6 +20,7 @@ let
     compilerPkgs = lib.genAttrs compilers (ghc: let
       reflex-platform = reflex-platform-fun {
         inherit system;
+        __useNewerCompiler = true;
         haskellOverlays = [
           # Use this package's source for reflex
           (self: super: {
