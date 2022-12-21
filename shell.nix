@@ -4,7 +4,7 @@ let
   system = builtins.currentSystem;
 in
   pkgs.mkShell {
-    name = "beam-automigrate";
+    name = "shell";
     buildInputs = [
       pkgs.cabal-install
       pkgs.ghcid
