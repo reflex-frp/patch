@@ -69,7 +69,7 @@ library
   default-extensions: PolyKinds
 
   if flag(split-these)
-    build-depends: these >= 1 && <1.2
+    build-depends: these >= 1 && <1.3
                  , semialign >=1 && <1.3
                  , monoidal-containers >= 0.6 && < 0.7
   else
