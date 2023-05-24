@@ -1,5 +1,9 @@
 # Revision history for patch
 
+## 0.0.8.2
+
+* Add support for GHC 9.6
+
 ## 0.0.8.1
 
 * Add support for GHC 9.2 and 9.4

@@ -7,16 +7,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ghc: ['8.4.4', '8.6.5', '8.8.4', '8.10.7', '9.0.1', '9.2.5', '9.4.3']
+        ghc: ['8.4.4', '8.6.5', '8.8.4', '8.10.7', '9.0.1', '9.2.5', '9.4.5', '9.6.1']
         os: ['ubuntu-latest', 'macos-latest']
     runs-on: ${{ matrix.os }}
 
     name: GHC ${{ matrix.ghc }} on ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v2
-    - uses: haskell/actions/setup@v1
+    - uses: actions/checkout@v3
+    - uses: haskell/actions/setup@v2
       with:
         ghc-version: ${{ matrix.ghc }}
+        cabal-version: '3.10.1.0'
     - name: Cache
       uses: actions/cache@v3
       env:
@@ -37,5 +38,7 @@ jobs:
     - name: Run tests
       # We don't run hlint tests, because different versions of hlint have different suggestions, and we don't want to worry about satisfying them all.
       run: cabal test --enable-tests -f-hlint all
-    - name: Build Docs
+    - if: matrix.ghc != '8.4.4'
+      # docs aren't built on ghc 8.4.4 because some dependency docs don't build on older GHCs
+      name: Build Docs
       run: cabal haddock

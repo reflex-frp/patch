@@ -17,6 +17,18 @@ let
     ] ++ lib.optionals (reflex-platform.iosSupport) [
       "ghcIosAarch64"
     ];
+    nixpkgsGhcs =
+      let
+        pkgs = import ./nixpkgs { inherit system; };
+        nixGhc945 = pkgs.haskell.packages.ghc945.override {
+        };
+        nixGhc961 = pkgs.haskell.packages.ghc961.override {
+        };
+      in
+      {
+        ghc945 = nixGhc945.callCabal2nix "patch" (import ./src.nix) {};
+        ghc961 = nixGhc961.callCabal2nix "patch" (import ./src.nix) {};
+      };
     compilerPkgs = lib.genAttrs compilers (ghc: let
       reflex-platform = reflex-platform-fun {
         inherit system;
@@ -39,7 +51,7 @@ let
         ];
       };
     in reflex-platform.${ghc}.patch);
-  in compilerPkgs // {
+  in compilerPkgs // nixpkgsGhcs // {
     cache = reflex-platform.pinBuildInputs "patch-${system}"
       (builtins.attrValues compilerPkgs);
   });
