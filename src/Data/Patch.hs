@@ -18,10 +18,15 @@ import Data.Functor.Const (Const (..))
 import Data.Functor.Identity
 import Data.Map.Monoidal (MonoidalMap)
 import Data.Proxy
+import GHC.Generics
+
+#if !MIN_VERSION_base(4,18,0)
+import Control.Applicative (liftA2)
+#endif
+
 #if !MIN_VERSION_base(4,11,0)
 import Data.Semigroup (Semigroup (..))
 #endif
-import GHC.Generics
 
 import Data.Patch.Class as X
 import Data.Patch.DMap as X hiding (getDeletions)
