@@ -28,6 +28,7 @@ import Control.Applicative (liftA2)
 import Data.Semigroup (Semigroup (..))
 #endif
 
+import qualified Data.Semigroup.Commutative as X
 import Data.Patch.Class as X
 import Data.Patch.DMap as X hiding (getDeletions)
 import Data.Patch.DMapWithMove as X

@@ -231,8 +231,9 @@ patchThatSortsMapWith cmp m = PatchMapWithPatchingMove $ Map.fromList $ catMaybe
           Just (from, to)
         reverseMapping = Map.fromList $ catMaybes $ zipWith f unsorted sorted
         g (to, _) (from, _) = if to == from then Nothing else
-          let Just movingTo = Map.lookup from reverseMapping
+          let movingTo = fromMaybe err $ Map.lookup from reverseMapping
           in Just (to, NodeInfo (From_Move from mempty) $ Just movingTo)
+        err = error "IMPOSSIBLE happens in patchThatSortsMapWith"
 
 -- | Create a 'PatchMapWithPatchingMove' that, if applied to the first 'Map' provided,
 -- will produce a 'Map' with the same values as the second 'Map' but with the
