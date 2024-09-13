@@ -1,5 +1,12 @@
 # Revision history for patch
 
+## Unreleased
+
+* Add support for GHC 9.8 and 9.10
+
+* Replace partial `Map.lookup` with proper custom error for internal error.
+  (This would make debugging a bug in the implementation easier.)
+
 ## 0.0.8.2
 
 * Add support for GHC 9.6
