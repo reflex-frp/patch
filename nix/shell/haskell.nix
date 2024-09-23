@@ -1,5 +1,6 @@
-{ haskellNix ? ../deps/haskell.nix }:
+{ haskellNix ? null }:
 
-let haskell = import ../deps/nix-haskell { inherit haskellNix; };
+let ci = import ../deps/nix-haskell-ci (if haskellNix != null then { inherit haskellNix; } else {});
+    haskell = ci.nix-haskell;
     project = import ../project/haskell.nix {};
-in haskell.project project;
+in haskell.project project
