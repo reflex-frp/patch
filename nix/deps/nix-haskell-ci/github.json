@@ -1,0 +1,8 @@
+{
+  "owner": "reflex-frp",
+  "repo": "nix-haskell-ci",
+  "branch": "main",
+  "private": false,
+  "rev": "17d1de24e89b9ca2c769d467b093d9c7fe58854e",
+  "sha256": "01f0dm2rjyiz6dfx8sshdyipmp6vvzx671qnvv88sk6947l0v3cr"
+}

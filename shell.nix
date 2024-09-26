@@ -1,15 +1,9 @@
-let
-  rp = import ./dep/reflex-platform { __useNewerCompiler = true; };
-  pkgs = rp.nixpkgs;
-  system = builtins.currentSystem;
-in
-  pkgs.mkShell {
-    name = "shell";
-    buildInputs = [
-      pkgs.cabal-install
-      pkgs.ghcid
-    ];
-    inputsFrom = [
-      (import ./release.nix {}).${system}.ghc.env
-    ];
-  }
+{ pkgs ? import <nixpkgs> {} }:
+
+let reflex-platform-shell = import ./nix/shell/reflex-platform.nix;
+    haskell-nix-shell = import ./nix/shell/haskell.nix {};
+
+in {
+  inherit reflex-platform-shell;
+  inherit haskell-nix-shell;
+}
