@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+* Stop defining `Group`; `Group` from the `groups` package can be used instead.
+
+  Most of the instances are provided by `groups`, except the `Group
+  MonoidalMap` instance, which is not lawful.  `reflex` might provide it as an
+  orphan for backwards compat, temporarily, but it should eventually be removed
+  everywhere.
+
 * Add support for GHC 9.8 and 9.10
 
 * Replace partial `Map.lookup` with proper custom error for internal error.

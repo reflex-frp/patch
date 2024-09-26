@@ -76,13 +76,11 @@ library
     if flag(split-these)
         build-depends:
             these >=1 && <1.3,
-            semialign >=1 && <1.4,
-            monoidal-containers >=0.6 && <0.7
+            semialign >=1 && <1.4
 
     else
         build-depends:
-            these >=0.4 && <0.9,
-            monoidal-containers ==0.4.0.0
+            these >=0.4 && <0.9
 
 test-suite tests
     type:             exitcode-stdio-1.0
