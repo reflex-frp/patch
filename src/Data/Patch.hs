@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 
 {-|
 Description:
@@ -15,7 +15,7 @@ module Data.Patch
 import Data.Semigroup (Semigroup (..))
 #endif
 
-import qualified Data.Semigroup.Additive as X
+import Data.Semigroup.Commutative as X
 import Data.Patch.Class as X
 import Data.Patch.DMap as X hiding (getDeletions)
 import Data.Patch.DMapWithMove as X

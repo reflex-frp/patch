@@ -9,6 +9,25 @@
   orphan for backwards compat, temporarily, but it should eventually be removed
   everywhere.
 
+* Add support for GHC 9.8 and 9.10
+
+* Replace partial `Map.lookup` with proper custom error for internal error.
+  (This would make debugging a bug in the implementation easier.)
+
+## 0.0.8.2
+
+* Add support for GHC 9.6
+
+## 0.0.8.1
+
+* Add support for GHC 9.2 and 9.4
+
+## 0.0.8.0 - 2022-12-09
+
+* Drop support for GHC 8.0 and 8.2.  It may still be possible to use this library with those versions of GHC, but we do not guarantee or test it anymore.
+* Fix an issue where (<>) crashed for some `PatchMapWithPatchingMove`s.
+* Change `DecidablyEmpty` for `Sum` and `Product` to use `Num` and `Eq` rather than delegating to the argument type's `DecidablyEmpty` class.  Since `Sum` and `Product` have `Monoid` actions and units that are inherently based on `Num`, it makes sense to have a `DecidablyEmpty` instances that inherently agree with that.  Also, since `Int` and other numeric types don't have (and can't reasonably have) `DecidablyEmpty` instances, this is necessary to make them actually usable in this context.
+
 ## 0.0.7.0 - 2022-06-23
 
 * Use `commutative-semigroups` for `Commutative`, making `Additive` a
