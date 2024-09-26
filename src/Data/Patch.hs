@@ -28,7 +28,9 @@ import Control.Applicative (liftA2)
 import Data.Semigroup (Semigroup (..))
 #endif
 
-import qualified Data.Semigroup.Commutative as X
+-- N.B. Intentionally reexporting `Additive`, the deprecated alias, as
+-- this is a reexport for backwards compatibility.
+import qualified Data.Semigroup.Additive as X
 import Data.Patch.Class as X
 import Data.Patch.DMap as X hiding (getDeletions)
 import Data.Patch.DMapWithMove as X
