@@ -1,0 +1,10 @@
+name: github-action
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    uses: ./.github/workflows/callee.yml
+    with:
+      matrix-ghc: "['8.4.4', '8.6.5', '8.8.4', '8.10.7', '9.0.1', '9.2.5', '9.4.5', '9.6.1', '9.8.2', '9.10.1']"
+      matrix-os: "['ubuntu-latest', 'macos-latest']"
