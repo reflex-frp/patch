@@ -1,6 +1,6 @@
 cabal-version:      >=1.10
 name:               patch
-version:            0.0.8.3
+version:            0.0.8.4
 license:            BSD3
 license-file:       LICENSE
 maintainer:         maintainer@obsidian.systems
@@ -108,7 +108,8 @@ test-suite hlint
         base,
         directory,
         filepath,
-        filemanip
+        filemanip,
+        patch
 
     if impl(ghc >=9.6)
         buildable: False
