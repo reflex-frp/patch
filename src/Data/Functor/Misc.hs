@@ -55,7 +55,6 @@ import qualified Data.Map as Map
 import Data.Some (Some, mkSome)
 import Data.These
 import Data.Type.Equality ((:~:)(Refl))
-import Data.Typeable hiding (Refl)
 
 --------------------------------------------------------------------------------
 -- Const2
@@ -66,7 +65,6 @@ import Data.Typeable hiding (Refl)
 -- parameter
 data Const2 :: Type -> x -> x -> Type where
   Const2 :: k -> Const2 k v v
-  deriving (Typeable)
 
 -- | Extract the value from a Const2
 unConst2 :: Const2 k v v' -> k
@@ -188,7 +186,6 @@ dmapToThese m = case (DMap.lookup LeftTag m, DMap.lookup RightTag m) of
 data EitherTag l r a where
   LeftTag :: EitherTag l r l
   RightTag :: EitherTag l r r
-  deriving (Typeable)
 
 deriving instance Show (EitherTag l r a)
 deriving instance Eq (EitherTag l r a)

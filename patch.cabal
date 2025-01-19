@@ -7,7 +7,7 @@ maintainer:         maintainer@obsidian.systems
 author:             Ryan Trinkle
 stability:          Experimental
 tested-with:
-    ghc ==8.4.4 || ==8.6.5 || ==8.8.4 || ==8.10.7 || ==9.0.1 || ==9.2.5 || ==9.4.5 || ==9.6.1 || ==9.8.2 || ==9.10.1
+    ghc ==8.4.4 || ==8.6.5 || ==8.8.4 || ==8.10.7 || ==9.0.1 || ==9.2.5 || ==9.4.5 || ==9.6.1 || ==9.8.2 || ==9.10.1 || ==9.12.1
     ghcjs ==8.6 || ==8.10
 
 homepage:           https://obsidian.systems
@@ -58,7 +58,7 @@ library
     default-extensions: PolyKinds
     ghc-options:        -Wall -fwarn-redundant-constraints -fwarn-tabs
     build-depends:
-        base >=4.9 && <=4.21,
+        base >=4.9 && <=4.22,
         constraints-extras >=0.3 && <0.5,
         commutative-semigroups >=0.0 && <0.3,
         containers >=0.6 && <0.8,
