@@ -108,7 +108,8 @@ test-suite hlint
         base,
         directory,
         filepath,
-        filemanip
+        filemanip,
+        patch
 
     if impl(ghc >=9.6)
         buildable: False
