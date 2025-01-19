@@ -1,6 +1,6 @@
 cabal-version:      >=1.10
 name:               patch
-version:            0.0.8.3
+version:            0.0.8.4
 license:            BSD3
 license-file:       LICENSE
 maintainer:         maintainer@obsidian.systems
