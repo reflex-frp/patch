@@ -1,5 +1,9 @@
 # Revision history for patch
 
+## 0.0.8.5
+
+* Strict `apply` for `PatchIntMap`, bringing it in line with the other `Map` types.
+
 ## 0.0.8.4
 
 * Support for GHC 9.12

@@ -50,7 +50,7 @@ makeWrapped ''PatchIntMap
 -- | Apply the insertions or deletions to a given 'IntMap'.
 instance Patch (PatchIntMap a) where
   type PatchTarget (PatchIntMap a) = IntMap a
-  apply (PatchIntMap p) v = if IntMap.null p then Nothing else Just $
+  apply (PatchIntMap p) v = if IntMap.null p then Nothing else Just $!
     let removes = IntMap.filter isNothing p
         adds = IntMap.mapMaybe id p
     in IntMap.union adds $ v `IntMap.difference` removes
