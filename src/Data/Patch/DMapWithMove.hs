@@ -1,14 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PatternGuards #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {-|
@@ -64,7 +54,7 @@ data NodeInfo k v a = NodeInfo
   , _nodeInfo_to :: !(To k a)
   -- ^Where this key is moving to, if involved in a move. Should only be @ComposeMaybe (Just k)@ when there is a corresponding 'From_Move'.
   }
-  deriving (Show)
+  deriving stock (Show)
 
 -- |Structure describing a particular change to a key, be it inserting a new key (@From_Insert@), updating an existing key (@From_Insert@ again), deleting a
 -- key (@From_Delete@), or moving a key (@From_Move@).
@@ -76,7 +66,7 @@ data From (k :: a -> Type) (v :: a -> Type) :: a -> Type where
   -- |Move the value from the given key @k a@ to this key. The source key should also have an entry in the patch giving the current key as @_nodeInfo_to@,
   -- usually but not necessarily with @From_Delete@.
   From_Move :: !(k a) -> From k v a
-  deriving (Show, Read, Eq, Ord)
+  deriving stock (Show, Read, Eq, Ord)
 
 -- |Type alias for the "to" part of a 'NodeInfo'. @'ComposeMaybe' ('Just' k)@ means the key is moving to another key, @ComposeMaybe Nothing@ for any other
 -- operation.

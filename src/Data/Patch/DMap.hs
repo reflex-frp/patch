@@ -1,11 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TypeFamilies #-}
 
 {-|
 Description: A basic 'Patch' on 'DMap'
@@ -38,9 +31,9 @@ import Data.Some (Some)
 -- while deletions are represented as @'ComposeMaybe' Nothing@.
 newtype PatchDMap k v = PatchDMap { unPatchDMap :: DMap k (ComposeMaybe v) }
 
-deriving instance GCompare k => Semigroup (PatchDMap k v)
+deriving newtype instance GCompare k => Semigroup (PatchDMap k v)
 
-deriving instance GCompare k => Monoid (PatchDMap k v)
+deriving newtype instance GCompare k => Monoid (PatchDMap k v)
 
 -- It won't let me derive for some reason
 instance GCompare k => DecidablyEmpty (PatchDMap k v) where

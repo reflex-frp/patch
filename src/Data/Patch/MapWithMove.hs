@@ -1,19 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PatternGuards #-}
-{-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE ViewPatterns #-}
 
 {-|
 Description: An intermediate 'Patch' on 'Map'
@@ -94,17 +79,18 @@ newtype PatchMapWithMove k (v :: Type) = PatchMapWithMove'
   { -- | Extract the underlying 'PatchMapWithPatchingMove k (Proxy v)'
     unPatchMapWithMove' :: PatchMapWithPatchingMove k (Proxy v)
   }
-  deriving ( Show, Read, Eq, Ord
+  deriving stock (Show, Read)
+  deriving newtype ( Eq, Ord
 -- Haddock cannot handle documentation here before GHC 8.6
-           ,
+                   ,
 #if __GLASGOW_HASKELL__ >= 806
-             -- | Compose patches having the same effect as applying the
-             -- patches in turn: @'applyAlways' (p <> q) == 'applyAlways' p .
-             -- 'applyAlways' q@
+                     -- | Compose patches having the same effect as applying the
+                     -- patches in turn: @'applyAlways' (p <> q) == 'applyAlways' p .
+                     -- 'applyAlways' q@
 #endif
-             Semigroup
-           , Monoid
-           )
+                     Semigroup
+                   , Monoid
+                   )
 
 pattern Coerce :: Coercible a b => a -> b
 pattern Coerce x <- (coerce -> x)
@@ -231,10 +217,10 @@ patchThatChangesMap oldByIndex newByIndex = PatchMapWithMove' $
 -- and where its old value should go to
 newtype NodeInfo k (v :: Type) = NodeInfo' { unNodeInfo' :: PM.NodeInfo k (Proxy v) }
 
-deriving instance (Show k, Show p) => Show (NodeInfo k p)
-deriving instance (Read k, Read p) => Read (NodeInfo k p)
-deriving instance (Eq k, Eq p) => Eq (NodeInfo k p)
-deriving instance (Ord k, Ord p) => Ord (NodeInfo k p)
+deriving stock instance (Show k, Show p) => Show (NodeInfo k p)
+deriving stock instance (Read k, Read p) => Read (NodeInfo k p)
+deriving newtype instance (Eq k, Eq p) => Eq (NodeInfo k p)
+deriving newtype instance (Ord k, Ord p) => Ord (NodeInfo k p)
 
 {-# COMPLETE NodeInfo #-}
 pattern NodeInfo :: From k v -> To k -> NodeInfo k v

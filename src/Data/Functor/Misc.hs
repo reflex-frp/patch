@@ -1,15 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
 
 {- |
 Description: Misc utilities relating to functor.
@@ -70,10 +59,10 @@ data Const2 :: Type -> x -> x -> Type where
 unConst2 :: Const2 k v v' -> k
 unConst2 (Const2 k) = k
 
-deriving instance Eq k => Eq (Const2 k v v')
-deriving instance Ord k => Ord (Const2 k v v')
-deriving instance Show k => Show (Const2 k v v')
-deriving instance Read k => Read (Const2 k v v)
+deriving stock instance Eq k => Eq (Const2 k v v')
+deriving stock instance Ord k => Ord (Const2 k v v')
+deriving stock instance Show k => Show (Const2 k v v')
+deriving stock instance Read k => Read (Const2 k v v)
 
 instance Show k => GShow (Const2 k v) where
   gshowsPrec n x@(Const2 _) = showsPrec n x
@@ -132,10 +121,10 @@ weakenDMapWith f = Map.fromDistinctAscList . map (\(k :=> v) -> (mkSome k, f v))
 data WrapArg :: (k -> Type) -> (k -> Type) -> Type -> Type where
   WrapArg :: f a -> WrapArg g f (g a)
 
-deriving instance Eq (f a) => Eq (WrapArg g f (g' a))
-deriving instance Ord (f a) => Ord (WrapArg g f (g' a))
-deriving instance Show (f a) => Show (WrapArg g f (g' a))
-deriving instance Read (f a) => Read (WrapArg g f (g a))
+deriving stock instance Eq (f a) => Eq (WrapArg g f (g' a))
+deriving stock instance Ord (f a) => Ord (WrapArg g f (g' a))
+deriving stock instance Show (f a) => Show (WrapArg g f (g' a))
+deriving stock instance Read (f a) => Read (WrapArg g f (g a))
 
 instance GEq f => GEq (WrapArg g f) where
   geq (WrapArg a) (WrapArg b) = (\Refl -> Refl) <$> geq a b
@@ -187,9 +176,9 @@ data EitherTag l r a where
   LeftTag :: EitherTag l r l
   RightTag :: EitherTag l r r
 
-deriving instance Show (EitherTag l r a)
-deriving instance Eq (EitherTag l r a)
-deriving instance Ord (EitherTag l r a)
+deriving stock instance Show (EitherTag l r a)
+deriving stock instance Eq (EitherTag l r a)
+deriving stock instance Ord (EitherTag l r a)
 
 instance GEq (EitherTag l r) where
   geq a b = case (a, b) of
@@ -230,6 +219,8 @@ dsumToEither = \case
 -- We need @f@ to be representational so that we can use safe
 -- @'Data.Coerce.coerce'@.
 newtype ComposeMaybe f a =
-  ComposeMaybe { getComposeMaybe :: Maybe (f a) } deriving (Show, Eq, Ord)
+  ComposeMaybe { getComposeMaybe :: Maybe (f a) }
+  deriving stock (Show)
+  deriving newtype (Eq, Ord)
 
-deriving instance Functor f => Functor (ComposeMaybe f)
+deriving stock instance Functor f => Functor (ComposeMaybe f)

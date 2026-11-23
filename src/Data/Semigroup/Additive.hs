@@ -1,5 +1,3 @@
-{-# LANGUAGE ConstraintKinds #-}
-
 {-|
 Description : A deprecated module containing a deprecated alias to the class for commutative semigroups
 -}

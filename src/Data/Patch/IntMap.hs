@@ -1,12 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
 
 {-|
 Description: Module containing 'PatchIntMap', a 'Patch' for 'IntMap'.
@@ -35,15 +27,13 @@ import Data.Traversable.WithIndex
 -- Internally represented by 'IntMap (Maybe a)', where @Just@ means insert/update
 -- and @Nothing@ means delete.
 newtype PatchIntMap a = PatchIntMap { unPatchIntMap :: IntMap (Maybe a) }
-  deriving ( Show, Read, Eq, Ord
-           , Functor, Foldable, Traversable
-           , Monoid, DecidablyEmpty
-           )
+  deriving stock (Show, Read, Functor, Foldable, Traversable)
+  deriving newtype (Eq, Ord, Monoid, DecidablyEmpty)
 
 -- | @a <> b@ will apply the changes of @b@ and then apply the changes of @a@.
 -- If the same key is modified by both patches, the one on the left will take
 -- precedence.
-deriving instance Semigroup (PatchIntMap v)
+deriving newtype instance Semigroup (PatchIntMap v)
 
 makeWrapped ''PatchIntMap
 
