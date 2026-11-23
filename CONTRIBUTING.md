@@ -47,7 +47,7 @@ Make sure the project builds and that the tests pass! This will generally also b
 
 #### Dependencies
 
-Include version bounds whenever adding a dependency to the library stanza of the cabal file. Note that libraries added to patch.cabal also need to be added to default.nix.
+Include version bounds whenever adding a dependency to the library stanza of the cabal file.
 
 ### Documentation
 
