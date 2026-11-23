@@ -1,12 +1,11 @@
 {-# LANGUAGE CPP #-}
 
-{- |
-Description: Misc utilities relating to functor.
-
-This module provides types and functions with no particular theme, but which
-are relevant to the use of 'Functor'-based datastructures like
-'Data.Dependent.Map.DMap'.
--}
+-- |
+-- Description: Misc utilities relating to functor.
+--
+-- This module provides types and functions with no particular theme, but which
+-- are relevant to the use of 'Functor'-based datastructures like
+-- 'Data.Dependent.Map.DMap'.
 module Data.Functor.Misc
   ( -- * Const2
     Const2 (..)
@@ -16,8 +15,10 @@ module Data.Functor.Misc
   , dmapToMapWith
   , mapToDMap
   , weakenDMapWith
+
     -- * WrapArg
   , WrapArg (..)
+
     -- * Convenience functions for DMap
   , mapWithFunctorToDMap
   , intMapWithFunctorToDMap
@@ -43,7 +44,7 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Some (Some, mkSome)
 import Data.These
-import Data.Type.Equality ((:~:)(Refl))
+import Data.Type.Equality ((:~:) (Refl))
 
 --------------------------------------------------------------------------------
 -- Const2
@@ -70,8 +71,8 @@ instance Show k => GShow (Const2 k v) where
 instance Eq k => GEq (Const2 k v) where
   geq (Const2 a) (Const2 b) =
     if a == b
-    then Just Refl
-    else Nothing
+      then Just Refl
+      else Nothing
 
 instance Ord k => GCompare (Const2 k v) where
   gcompare (Const2 a) (Const2 b) = case compare a b of
@@ -146,22 +147,25 @@ mapKeyValuePairsMonotonic :: (DSum k v -> DSum k' v') -> DMap k v -> DMap k' v'
 mapKeyValuePairsMonotonic f = DMap.fromDistinctAscList . map f . DMap.toAscList
 
 {-# INLINE combineDMapsWithKey #-}
+
 -- | Union two 'DMap's of different types, yielding another type.  Each key that
 -- is present in either input map will be present in the output.
-combineDMapsWithKey :: forall f g h i.
-                       GCompare f
-                    => (forall a. f a -> These (g a) (h a) -> i a)
-                    -> DMap f g
-                    -> DMap f h
-                    -> DMap f i
+combineDMapsWithKey
+  :: forall f g h i
+   . GCompare f
+  => (forall a. f a -> These (g a) (h a) -> i a)
+  -> DMap f g
+  -> DMap f h
+  -> DMap f i
 combineDMapsWithKey f mg mh = DMap.fromList $ go (DMap.toList mg) (DMap.toList mh)
-  where go :: [DSum f g] -> [DSum f h] -> [DSum f i]
-        go [] hs = map (\(hk :=> hv) -> hk :=> f hk (That hv)) hs
-        go gs [] = map (\(gk :=> gv) -> gk :=> f gk (This gv)) gs
-        go gs@((gk :=> gv) : gs') hs@((hk :=> hv) : hs') = case gk `gcompare` hk of
-          GLT -> (gk :=> f gk (This gv)) : go gs' hs
-          GEQ -> (gk :=> f gk (These gv hv)) : go gs' hs'
-          GGT -> (hk :=> f hk (That hv)) : go gs hs'
+  where
+    go :: [DSum f g] -> [DSum f h] -> [DSum f i]
+    go [] hs = map (\(hk :=> hv) -> hk :=> f hk (That hv)) hs
+    go gs [] = map (\(gk :=> gv) -> gk :=> f gk (This gv)) gs
+    go gs@((gk :=> gv) : gs') hs@((hk :=> hv) : hs') = case gk `gcompare` hk of
+      GLT -> (gk :=> f gk (This gv)) : go gs' hs
+      GEQ -> (gk :=> f gk (These gv hv)) : go gs' hs'
+      GGT -> (hk :=> f hk (That hv)) : go gs hs'
 
 -- | Extract the values of a 'DMap' of 'EitherTag's.
 dmapToThese :: DMap (EitherTag a b) Identity -> Maybe (These a b)
@@ -218,8 +222,8 @@ dsumToEither = \case
 -- because that would make the @f@ parameter have a nominal type role.
 -- We need @f@ to be representational so that we can use safe
 -- @'Data.Coerce.coerce'@.
-newtype ComposeMaybe f a =
-  ComposeMaybe { getComposeMaybe :: Maybe (f a) }
+newtype ComposeMaybe f a
+  = ComposeMaybe {getComposeMaybe :: Maybe (f a)}
   deriving stock (Show)
   deriving newtype (Eq, Ord)
 

@@ -1,28 +1,26 @@
 {-# LANGUAGE CPP #-}
 
 -- TODO upstream somwhere else?
-{-|
-Description: This module provides a class to decide whether a monoid element is the identity.
--}
+
+-- |
+-- Description: This module provides a class to decide whether a monoid element is the identity.
 module Data.Monoid.DecidablyEmpty where
 
-import Data.Functor.Identity
+import qualified Data.Dependent.Map as DMap
 import Data.Functor.Const
-import Data.Monoid
+import Data.Functor.Identity
+import Data.GADT.Compare
+import qualified Data.IntMap as IntMap
+import qualified Data.IntSet as IntSet
+import qualified Data.Map as Map
 import Data.Maybe (isNothing)
+import Data.Monoid
 import Data.Ord
 import Data.Proxy
 import Data.Semigroup hiding (First, Last)
-import GHC.Generics
-
-import qualified Data.IntSet as IntSet
-import qualified Data.IntMap as IntMap
-import qualified Data.Map as Map
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
-
-import Data.GADT.Compare
-import qualified Data.Dependent.Map as DMap
+import GHC.Generics
 
 -- | A 'DecidablyEmpty' is one where it can be computed whether or not an
 -- arbitrary value is 'mempty'.
@@ -41,6 +39,7 @@ instance DecidablyEmpty Ordering
 instance DecidablyEmpty ()
 instance DecidablyEmpty Any
 instance DecidablyEmpty All
+
 -- instance DecidablyEmpty Lifetime
 -- instance DecidablyEmpty Event
 instance DecidablyEmpty [a] where

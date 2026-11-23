@@ -1,31 +1,31 @@
 {-# LANGUAGE CPP #-}
 
-{-|
-Description: Module containing 'PatchIntMap', a 'Patch' for 'IntMap'.
-
-Patches of this sort allow for insert/update or delete of associations.
--}
+-- |
+-- Description: Module containing 'PatchIntMap', a 'Patch' for 'IntMap'.
+--
+-- Patches of this sort allow for insert/update or delete of associations.
 module Data.Patch.IntMap where
 
-import Control.Lens hiding  (FunctorWithIndex, FoldableWithIndex, TraversableWithIndex)
+import Control.Lens hiding (FoldableWithIndex, FunctorWithIndex, TraversableWithIndex)
 #if !MIN_VERSION_lens(5,0,0)
 import qualified Control.Lens as L
 #endif
+import Data.Foldable.WithIndex
+import Data.Functor.WithIndex
 import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as IntMap
 import Data.Maybe
+import Data.Traversable.WithIndex
+
 import Data.Monoid.DecidablyEmpty
 import Data.Patch.Class
-import Data.Functor.WithIndex
-import Data.Foldable.WithIndex
-import Data.Traversable.WithIndex
 
 -- | 'Patch' for 'IntMap' which represents insertion or deletion of keys in the mapping.
 -- Internally represented by 'IntMap (Maybe a)', where @Just@ means insert/update
 -- and @Nothing@ means delete.
-newtype PatchIntMap a = PatchIntMap { unPatchIntMap :: IntMap (Maybe a) }
-  deriving stock (Show, Read, Functor, Foldable, Traversable)
-  deriving newtype (Eq, Ord, Monoid, DecidablyEmpty)
+newtype PatchIntMap a = PatchIntMap {unPatchIntMap :: IntMap (Maybe a)}
+  deriving stock (Foldable, Functor, Read, Show, Traversable)
+  deriving newtype (DecidablyEmpty, Eq, Monoid, Ord)
 
 -- | @a <> b@ will apply the changes of @b@ and then apply the changes of @a@.
 -- If the same key is modified by both patches, the one on the left will take
@@ -37,10 +37,14 @@ makeWrapped ''PatchIntMap
 -- | Apply the insertions or deletions to a given 'IntMap'.
 instance Patch (PatchIntMap a) where
   type PatchTarget (PatchIntMap a) = IntMap a
-  apply (PatchIntMap p) v = if IntMap.null p then Nothing else Just $!
-    let removes = IntMap.filter isNothing p
-        adds = IntMap.mapMaybe id p
-    in IntMap.union adds $ v `IntMap.difference` removes
+  apply (PatchIntMap p) v =
+    if IntMap.null p
+      then Nothing
+      else
+        Just $!
+          let removes = IntMap.filter isNothing p
+              adds = IntMap.mapMaybe id p
+          in IntMap.union adds $ v `IntMap.difference` removes
 
 instance FunctorWithIndex Int PatchIntMap
 instance FoldableWithIndex Int PatchIntMap
@@ -56,7 +60,7 @@ instance L.TraversableWithIndex Int PatchIntMap where itraverse = Data.Traversab
 -- | Map a function @Int -> a -> b@ over all @a@s in the given @'PatchIntMap' a@
 -- (that is, all inserts/updates), producing a @PatchIntMap b@.
 mapIntMapPatchWithKey :: (Int -> a -> b) -> PatchIntMap a -> PatchIntMap b
-mapIntMapPatchWithKey f (PatchIntMap m) = PatchIntMap $ IntMap.mapWithKey (\ k mv -> f k <$> mv) m
+mapIntMapPatchWithKey f (PatchIntMap m) = PatchIntMap $ IntMap.mapWithKey (\k mv -> f k <$> mv) m
 
 -- | Map an effectful function @Int -> a -> f b@ over all @a@s in the given @'PatchIntMap' a@
 -- (that is, all inserts/updates), producing a @f (PatchIntMap b)@.

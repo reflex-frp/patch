@@ -1,9 +1,8 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-{-|
-Description: A 'Patch' combinator type for patching or replacing with a separate new value.
--}
+-- |
+-- Description: A 'Patch' combinator type for patching or replacing with a separate new value.
 module Data.Patch.PatchOrReplacement
   ( PatchOrReplacement (..)
   , _PatchOrReplacement_Patch
@@ -12,8 +11,9 @@ module Data.Patch.PatchOrReplacement
   ) where
 
 import Control.Lens.TH (makePrisms)
-import Data.Patch
 import GHC.Generics
+
+import Data.Patch
 
 -- | Either a patch or a replacement value.
 --
@@ -39,7 +39,8 @@ traversePatchOrReplacement
   :: Functor f
   => (a -> f b)
   -> (PatchTarget a -> f (PatchTarget b))
-  -> PatchOrReplacement a -> f (PatchOrReplacement b)
+  -> PatchOrReplacement a
+  -> f (PatchOrReplacement b)
 traversePatchOrReplacement f g = \case
   PatchOrReplacement_Patch p -> PatchOrReplacement_Patch <$> f p
   PatchOrReplacement_Replacement p -> PatchOrReplacement_Replacement <$> g p
@@ -52,9 +53,12 @@ instance Patch p => Patch (PatchOrReplacement p) where
     PatchOrReplacement_Patch p -> apply p
     PatchOrReplacement_Replacement v -> \_ -> Just v
 
-instance ( Monoid p
-         , Patch p
-         ) => Monoid (PatchOrReplacement p) where
+instance
+  ( Monoid p
+  , Patch p
+  )
+  => Monoid (PatchOrReplacement p)
+  where
   mempty = PatchOrReplacement_Patch mempty
   mappend = (<>)
 
