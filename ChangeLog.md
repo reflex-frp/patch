@@ -4,6 +4,7 @@
 
 * Strict `apply` for `PatchIntMap`, bringing it in line with the other `Map` types.
 * Support for GHC 9.14.
+* Allow `these` 1.3 and `semialign` 1.4.
 
 ## 0.0.8.4
 
