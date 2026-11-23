@@ -2,3 +2,5 @@ packages: .
 
 if arch(javascript)
   extra-packages: ghci
+  -- ghci for GHC 9.14 needs containers 0.8, which dependent-map 0.4.0.1 excludes
+  allow-newer: dependent-map:containers
