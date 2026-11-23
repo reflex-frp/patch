@@ -10,7 +10,6 @@ import Data.Map as Map ( Map, fromList, singleton )
 import Hedgehog (checkParallel, discover, Property, property, forAll, PropertyT, (===))
 import Hedgehog.Gen as Gen ( int )
 import Hedgehog.Range as Range ( linear )
-import Control.Monad (replicateM)
 import System.Exit (exitFailure, exitSuccess)
 import Data.Sequence as Seq ( foldMapWithIndex, replicateM )
 import Data.Semigroup
@@ -53,6 +52,6 @@ prop_patchThatChangesMap = property $ do
 makeRandomIntMap :: Monad m => PropertyT m (Map Int Int)
 makeRandomIntMap = do
    let genNum = Gen.int (Range.linear 0 100)
-   length <- forAll genNum
-   listOfNumbers <- forAll $ Seq.replicateM length genNum
+   len <- forAll genNum
+   listOfNumbers <- forAll $ Seq.replicateM len genNum
    pure $ Seq.foldMapWithIndex Map.singleton listOfNumbers
