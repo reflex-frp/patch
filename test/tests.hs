@@ -14,9 +14,6 @@ import System.Exit (exitFailure, exitSuccess)
 import Data.Sequence as Seq ( foldMapWithIndex, replicateM )
 import Data.Semigroup
   ( Sum (..)
-#if !MIN_VERSION_base(4,11,0)
-  , Semigroup(..)
-#endif
   )
 
 main :: IO ()

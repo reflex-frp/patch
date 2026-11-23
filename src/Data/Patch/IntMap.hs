@@ -15,9 +15,6 @@ import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as IntMap
 import Data.Maybe
 import Data.Monoid.DecidablyEmpty
-#if !MIN_VERSION_base(4,11,0)
-import Data.Semigroup (Semigroup (..))
-#endif
 import Data.Patch.Class
 import Data.Functor.WithIndex
 import Data.Foldable.WithIndex

@@ -64,9 +64,6 @@ import Data.List
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Proxy
-#if !MIN_VERSION_base(4,11,0)
-import Data.Semigroup (Semigroup (..))
-#endif
 import Data.Traversable (foldMapDefault)
 import Data.Functor.WithIndex
 import Data.Foldable.WithIndex
@@ -81,13 +78,9 @@ newtype PatchMapWithMove k (v :: Type) = PatchMapWithMove'
   }
   deriving stock (Show, Read)
   deriving newtype ( Eq, Ord
--- Haddock cannot handle documentation here before GHC 8.6
-                   ,
-#if __GLASGOW_HASKELL__ >= 806
-                     -- | Compose patches having the same effect as applying the
+                   , -- | Compose patches having the same effect as applying the
                      -- patches in turn: @'applyAlways' (p <> q) == 'applyAlways' p .
                      -- 'applyAlways' q@
-#endif
                      Semigroup
                    , Monoid
                    )

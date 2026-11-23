@@ -21,9 +21,6 @@ import GHC.Generics
 import Control.Applicative (liftA2)
 #endif
 
-#if !MIN_VERSION_base(4,11,0)
-import Data.Semigroup (Semigroup (..))
-#endif
 
 -- N.B. Intentionally reexporting `Additive`, the deprecated alias, as
 -- this is a reexport for backwards compatibility.
