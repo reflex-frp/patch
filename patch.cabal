@@ -65,6 +65,7 @@ common common
         FunctionalDependencies
         GADTs
         GeneralizedNewtypeDeriving
+        ImportQualifiedPost
         LambdaCase
         MultiParamTypeClasses
         NoMonomorphismRestriction

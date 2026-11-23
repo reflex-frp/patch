@@ -8,12 +8,12 @@ module Data.Patch.IntMap where
 
 import Control.Lens hiding (FoldableWithIndex, FunctorWithIndex, TraversableWithIndex)
 #if !MIN_VERSION_lens(5,0,0)
-import qualified Control.Lens as L
+import Control.Lens qualified as L
 #endif
 import Data.Foldable.WithIndex
 import Data.Functor.WithIndex
 import Data.IntMap.Strict (IntMap)
-import qualified Data.IntMap.Strict as IntMap
+import Data.IntMap.Strict qualified as IntMap
 import Data.Maybe
 import Data.Traversable.WithIndex
 

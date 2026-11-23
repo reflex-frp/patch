@@ -8,10 +8,11 @@
 module Data.Patch.Map where
 
 import Control.Lens hiding (FoldableWithIndex, FunctorWithIndex, TraversableWithIndex)
+import Data.Foldable (toList)
 import Data.Foldable.WithIndex
 import Data.Functor.WithIndex
 import Data.Map (Map)
-import qualified Data.Map as Map
+import Data.Map qualified as Map
 import Data.Maybe
 import Data.Semigroup (Semigroup (..), stimesIdempotentMonoid)
 import Data.Traversable.WithIndex
@@ -19,7 +20,7 @@ import Data.Traversable.WithIndex
 import Data.Monoid.DecidablyEmpty
 import Data.Patch.Class
 #if !MIN_VERSION_lens(5,0,0)
-import qualified Control.Lens as L
+import Control.Lens qualified as L
 #endif
 
 -- | A set of changes to a 'Map'.  Any element may be inserted/updated or
@@ -40,7 +41,7 @@ deriving newtype instance Ord k => Monoid (PatchMap k v)
 -- If the same key is modified by both patches, the one on the left will take
 -- precedence.
 instance Ord k => Semigroup (PatchMap k v) where
-  PatchMap a <> PatchMap b = PatchMap $ a `mappend` b -- TODO: Add a semigroup instance for Map
+  PatchMap a <> PatchMap b = PatchMap $ a <> b -- TODO: Add a semigroup instance for Map
   stimes = stimesIdempotentMonoid -- PatchMap is idempotent, so stimes n is id for every n
 
 -- | Apply the insertions or deletions to a given 'Map'.
@@ -70,7 +71,7 @@ instance L.TraversableWithIndex k (PatchMap k) where itraverse = Data.Traversabl
 
 -- | Returns all the new elements that will be added to the 'Map'
 patchMapNewElements :: PatchMap k v -> [v]
-patchMapNewElements (PatchMap p) = catMaybes $ Map.elems p
+patchMapNewElements (PatchMap p) = catMaybes $ toList p
 
 -- | Returns all the new elements that will be added to the 'Map'
 patchMapNewElementsMap :: PatchMap k v -> Map k v

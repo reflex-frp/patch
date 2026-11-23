@@ -58,16 +58,16 @@ import Data.Functor.WithIndex
 import Data.Kind (Type)
 import Data.List
 import Data.Map (Map)
-import qualified Data.Map as Map
+import Data.Map qualified as Map
 import Data.Proxy
 import Data.Traversable (foldMapDefault)
 import Data.Traversable.WithIndex
 
 import Data.Patch.Class
 import Data.Patch.MapWithPatchingMove (PatchMapWithPatchingMove (..), To)
-import qualified Data.Patch.MapWithPatchingMove as PM
+import Data.Patch.MapWithPatchingMove qualified as PM
 #if !MIN_VERSION_lens(5,0,0)
-import qualified Control.Lens as L
+import Control.Lens qualified as L
 #endif
 
 -- | Patch a Map with additions, deletions, and moves.  Invariant: If key @k1@

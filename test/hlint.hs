@@ -1,6 +1,7 @@
 module Main where
 
-import Control.Monad
+import Data.Foldable (fold)
+import Data.Traversable (for)
 import Language.Haskell.HLint (hlint)
 import System.Directory
 import System.Exit (exitFailure, exitSuccess)
@@ -33,13 +34,9 @@ main = do
             [ fileType ==? Directory
             , fileName /=? ".git"
             ]
-      matchFile =
-        and
-          <$> sequence
-            [ extension ==? ".hs"
-            ]
+      matchFile = extension ==? ".hs"
   files <- find recurseInto matchFile (pwd </> "src") -- TODO: Someday fix all hints in tests, etc.
-  ideas <- fmap concat $ forM files $ \f -> do
-    putStr $ "linting file " ++ drop (length pwd + 1) f ++ "... "
+  ideas <- fmap fold $ for files $ \f -> do
+    putStr $ "linting file " <> drop (length pwd + 1) f <> "... "
     runHlint f
   if null ideas then exitSuccess else exitFailure
