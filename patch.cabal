@@ -135,9 +135,7 @@ library
         dependent-sum >=0.6 && <0.8,
         lens >=4.7 && <5.4,
         indexed-traversable >=0.1 && <0.2,
-        semigroupoids >=4.0 && <7,
-        transformers >=0.5.6.0 && <0.7,
-        witherable >=0.3 && <0.6
+        transformers >=0.5.6.0 && <0.7
 
     if impl(ghc <8.6)
         build-depends: base-orphans >=0.8 && <0.10
