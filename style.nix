@@ -9,15 +9,22 @@ let style = inputs."style.hs";
     hlint = import (style + "/hlint.nix") { inherit system pkgs; };
 
     styled = [
-      ./Setup.hs
-      ./src
-      ./test
+      "Setup.hs"
+      "src"
+      "test"
     ];
-    sources = map (path: "${path}") styled;
+
+    # The styled code with patch.cabal beside it. fourmolu reads the
+    # extensions and the local modules from the cabal file.
+    source = pkgs.lib.fileset.toSource {
+      root = ./.;
+      fileset = pkgs.lib.fileset.unions (map (path: ./. + "/${path}") ([ "patch.cabal" ] ++ styled));
+    };
 
     check = name: tool: command:
       pkgs.runCommand name { nativeBuildInputs = [ tool ]; } ''
-        ${command} ${toString sources}
+        cd ${source}
+        ${command} ${toString styled}
         touch $out
       '';
 
