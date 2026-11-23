@@ -1,45 +1,49 @@
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
 
-{-|
-Description:
-  This module defines the 'Group' class, and reexports the other modules.
--}
+-- |
+-- Description:
+--   This module defines the 'Group' class, and reexports the other modules.
 module Data.Patch
   ( module Data.Patch
   , module X
   ) where
 
-import Data.Semigroup.Commutative
 import Data.Functor.Const (Const (..))
 import Data.Functor.Identity
 import Data.Map.Monoidal (MonoidalMap)
 import Data.Proxy
+import Data.Semigroup.Commutative
 import GHC.Generics
 
 #if !MIN_VERSION_base(4,18,0)
 import Control.Applicative (liftA2)
 #endif
 
-
--- N.B. Intentionally reexporting `Additive`, the deprecated alias, as
--- this is a reexport for backwards compatibility.
-import Data.Semigroup.Additive as X
 import Data.Patch.Class as X
 import Data.Patch.DMap as X hiding (getDeletions)
 import Data.Patch.DMapWithMove as X
-  ( PatchDMapWithMove, const2PatchDMapWithMoveWith, mapPatchDMapWithMove
+  ( PatchDMapWithMove
+  , const2PatchDMapWithMoveWith
+  , mapPatchDMapWithMove
   , patchDMapWithMoveToPatchMapWithMoveWith
-  , traversePatchDMapWithMoveWithKey, unPatchDMapWithMove
-  , unsafePatchDMapWithMove, weakenPatchDMapWithMoveWith
+  , traversePatchDMapWithMoveWithKey
+  , unPatchDMapWithMove
+  , unsafePatchDMapWithMove
+  , weakenPatchDMapWithMoveWith
   )
 import Data.Patch.IntMap as X hiding (getDeletions)
 import Data.Patch.Map as X
 import Data.Patch.MapWithMove as X
-  ( PatchMapWithMove, patchMapWithMoveNewElements
-  , patchMapWithMoveNewElementsMap, unPatchMapWithMove
+  ( PatchMapWithMove
+  , patchMapWithMoveNewElements
+  , patchMapWithMoveNewElementsMap
+  , unPatchMapWithMove
   , unsafePatchMapWithMove
   )
+-- N.B. Intentionally reexporting `Additive`, the deprecated alias, as
+-- this is a reexport for backwards compatibility.
+import Data.Semigroup.Additive as X
 
 -- | A 'Group' is a 'Monoid' where every element has an inverse.
 class (Semigroup q, Monoid q) => Group q where
@@ -48,7 +52,7 @@ class (Semigroup q, Monoid q) => Group q where
   r ~~ s = r <> negateG s
 
 -- | The elements of an 'Commutative' 'Semigroup' can be considered as patches of their own type.
-newtype AdditivePatch p = AdditivePatch { unAdditivePatch :: p }
+newtype AdditivePatch p = AdditivePatch {unAdditivePatch :: p}
 
 instance Commutative p => Patch (AdditivePatch p) where
   type PatchTarget (AdditivePatch p) = p

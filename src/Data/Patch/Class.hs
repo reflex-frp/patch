@@ -1,20 +1,19 @@
 {-# LANGUAGE CPP #-}
 
-{-|
-Description: The module provides the 'Patch' class.
-
-This is a class for types which represent changes made to other types
--}
+-- |
+-- Description: The module provides the 'Patch' class.
+--
+-- This is a class for types which represent changes made to other types
 module Data.Patch.Class where
 
 import Data.Functor.Identity
 import Data.Kind (Type)
 import Data.Maybe
-import Data.Semigroup
-  ( Sum (..)
-  , Product (..)
-  )
 import Data.Proxy
+import Data.Semigroup
+  ( Product (..)
+  , Sum (..)
+  )
 
 -- | A 'Patch' type represents a kind of change made to a datastructure.
 --
@@ -22,6 +21,7 @@ import Data.Proxy
 -- the law that @applyAlways (f <> g) == applyAlways f . applyAlways g@.
 class Patch p where
   type PatchTarget p :: Type
+
   -- | Apply the patch @p a@ to the value @a@.  If no change is needed, return
   -- 'Nothing'.
   apply :: p -> PatchTarget p -> Maybe (PatchTarget p)

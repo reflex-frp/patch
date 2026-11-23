@@ -10,29 +10,35 @@ import System.FilePath.Find
 main :: IO ()
 main = do
   pwd <- getCurrentDirectory
-  let runHlint f = hlint $ f:
-        [ "--ignore=Redundant do"
-        , "--ignore=Use camelCase"
-        , "--ignore=Redundant $"
-        , "--ignore=Use &&"
-        , "--ignore=Use &&&"
-        , "--ignore=Use const"
-        , "--ignore=Use >=>"
-        , "--ignore=Use ."
-        , "--ignore=Use unless"
-        , "--ignore=Reduce duplication"
-        , "--cpp-define=USE_TEMPLATE_HASKELL"
-        , "--ignore=Use tuple-section"
-        , "--ignore=Unused LANGUAGE pragma" -- hlint3 falsely believes that TypeOperators is not needed
-        ]
-      recurseInto = and <$> sequence
-        [ fileType ==? Directory
-        , fileName /=? ".git"
-        ]
-      matchFile = and <$> sequence
-        [ extension ==? ".hs"
-        ]
-  files <- find recurseInto matchFile (pwd </> "src") --TODO: Someday fix all hints in tests, etc.
+  let runHlint f =
+        hlint $
+          f
+            : [ "--ignore=Redundant do"
+              , "--ignore=Use camelCase"
+              , "--ignore=Redundant $"
+              , "--ignore=Use &&"
+              , "--ignore=Use &&&"
+              , "--ignore=Use const"
+              , "--ignore=Use >=>"
+              , "--ignore=Use ."
+              , "--ignore=Use unless"
+              , "--ignore=Reduce duplication"
+              , "--cpp-define=USE_TEMPLATE_HASKELL"
+              , "--ignore=Use tuple-section"
+              , "--ignore=Unused LANGUAGE pragma" -- hlint3 falsely believes that TypeOperators is not needed
+              ]
+      recurseInto =
+        and
+          <$> sequence
+            [ fileType ==? Directory
+            , fileName /=? ".git"
+            ]
+      matchFile =
+        and
+          <$> sequence
+            [ extension ==? ".hs"
+            ]
+  files <- find recurseInto matchFile (pwd </> "src") -- TODO: Someday fix all hints in tests, etc.
   ideas <- fmap concat $ forM files $ \f -> do
     putStr $ "linting file " ++ drop (length pwd + 1) f ++ "... "
     runHlint f
