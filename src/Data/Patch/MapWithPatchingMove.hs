@@ -1,15 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PatternGuards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {-|
@@ -79,18 +68,18 @@ newtype PatchMapWithPatchingMove k p = PatchMapWithPatchingMove
     unPatchMapWithPatchingMove :: Map k (NodeInfo k p)
   }
 
-deriving instance (Show k, Show p, Show (PatchTarget p)) => Show (PatchMapWithPatchingMove k p)
-deriving instance (Ord k, Read k, Read p, Read (PatchTarget p)) => Read (PatchMapWithPatchingMove k p)
-deriving instance (Eq k, Eq p, Eq (PatchTarget p)) => Eq (PatchMapWithPatchingMove k p)
-deriving instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (PatchMapWithPatchingMove k p)
+deriving stock instance (Show k, Show p, Show (PatchTarget p)) => Show (PatchMapWithPatchingMove k p)
+deriving stock instance (Ord k, Read k, Read p, Read (PatchTarget p)) => Read (PatchMapWithPatchingMove k p)
+deriving newtype instance (Eq k, Eq p, Eq (PatchTarget p)) => Eq (PatchMapWithPatchingMove k p)
+deriving newtype instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (PatchMapWithPatchingMove k p)
 
-deriving instance ( Ord k
+deriving newtype instance ( Ord k
 #if !MIN_VERSION_base(4,11,0)
-                  , Semigroup p
+                          , Semigroup p
 #endif
-                  , DecidablyEmpty p
-                  , Patch p
-                  ) => DecidablyEmpty (PatchMapWithPatchingMove k p)
+                          , DecidablyEmpty p
+                          , Patch p
+                          ) => DecidablyEmpty (PatchMapWithPatchingMove k p)
 
 -- | Create a 'PatchMapWithPatchingMove', validating it
 patchMapWithPatchingMove
@@ -296,10 +285,10 @@ data NodeInfo k p = NodeInfo
     -- ^ If the old value is being kept (i.e. moved rather than deleted or
     -- replaced), where is it going?
   }
-deriving instance (Show k, Show p, Show (PatchTarget p)) => Show (NodeInfo k p)
-deriving instance (Read k, Read p, Read (PatchTarget p)) => Read (NodeInfo k p)
-deriving instance (Eq k, Eq p, Eq (PatchTarget p)) => Eq (NodeInfo k p)
-deriving instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (NodeInfo k p)
+deriving stock instance (Show k, Show p, Show (PatchTarget p)) => Show (NodeInfo k p)
+deriving stock instance (Read k, Read p, Read (PatchTarget p)) => Read (NodeInfo k p)
+deriving stock instance (Eq k, Eq p, Eq (PatchTarget p)) => Eq (NodeInfo k p)
+deriving stock instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (NodeInfo k p)
 
 -- | Traverse the 'NodeInfo' over the key, patch, and patch target. Because of
 -- the type families here, this doesn't it any bi- or tri-traversal class.
@@ -339,10 +328,10 @@ data From k p
    | From_Delete -- ^ Delete the existing value, if any, from here
    | From_Move !k !p -- ^ Move the value here from the given key, and apply the given patch
 
-deriving instance (Show k, Show p, Show (PatchTarget p)) => Show (From k p)
-deriving instance (Read k, Read p, Read (PatchTarget p)) => Read (From k p)
-deriving instance (Eq k, Eq p, Eq (PatchTarget p)) => Eq (From k p)
-deriving instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (From k p)
+deriving stock instance (Show k, Show p, Show (PatchTarget p)) => Show (From k p)
+deriving stock instance (Read k, Read p, Read (PatchTarget p)) => Read (From k p)
+deriving stock instance (Eq k, Eq p, Eq (PatchTarget p)) => Eq (From k p)
+deriving stock instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (From k p)
 
 -- | Traverse the 'From' over the key, patch, and patch target. Because of
 -- the type families here, this doesn't it any bi- or tri-traversal class.

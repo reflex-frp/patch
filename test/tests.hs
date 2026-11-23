@@ -1,5 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE TemplateHaskell #-}
 module Main where
 
 import Test.HUnit (runTestTT, (~:), assertEqual, errors, failures, test)

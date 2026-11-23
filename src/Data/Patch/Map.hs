@@ -1,13 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
 
 {-|
 Description: A basic 'Patch' on 'Map'
@@ -36,16 +27,14 @@ import Data.Traversable.WithIndex
 -- deleted.  Insertions are represented as values wrapped in 'Just', while
 -- deletions are represented as 'Nothing's
 newtype PatchMap k v = PatchMap { unPatchMap :: Map k (Maybe v) }
-  deriving ( Show, Read, Eq, Ord
-           , Foldable, Traversable
-           , DecidablyEmpty
-           )
+  deriving stock (Show, Read, Foldable, Traversable)
+  deriving newtype (Eq, Ord, DecidablyEmpty)
 
 -- | 'fmap'ping a 'PatchMap' will alter all of the values it will insert.
 -- Deletions are unaffected.
-deriving instance Functor (PatchMap k)
+deriving stock instance Functor (PatchMap k)
 -- | The empty 'PatchMap' contains no insertions or deletions
-deriving instance Ord k => Monoid (PatchMap k v)
+deriving newtype instance Ord k => Monoid (PatchMap k v)
 
 -- | @a <> b@ will apply the changes of @b@ and then apply the changes of @a@.
 -- If the same key is modified by both patches, the one on the left will take

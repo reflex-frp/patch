@@ -37,7 +37,7 @@ let
     ];
 
     seriesProject = series: modules:
-      variant ([ { compiler.name = ghcName series; } ] ++ modules);
+      variant ([ { compiler.name = ghcName series; } strict ] ++ modules);
 
     ghcName = series: "ghc${lib.replaceStrings [ "." ] [ "" ] series}";
 
@@ -112,6 +112,10 @@ let
     };
 
     style = import ./style.nix { inherit system inputs; pkgs = stock.pkgs; };
+
+    strict = {
+      packages = lib.genAttrs libraries (_: { flags.strict = true; });
+    };
 
     libraries = [ "patch" ];
 

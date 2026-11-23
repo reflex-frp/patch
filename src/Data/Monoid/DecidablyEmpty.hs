@@ -1,8 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TypeOperators #-}
 
 -- TODO upstream somwhere else?
 {-|
@@ -65,33 +61,33 @@ instance (Num a, Eq a) => DecidablyEmpty (Product a) where
   isEmpty = (== 1)
 instance (Num a, Eq a) => DecidablyEmpty (Sum a) where
   isEmpty = (== 0)
-deriving instance DecidablyEmpty a => DecidablyEmpty (Dual a)
+deriving newtype instance DecidablyEmpty a => DecidablyEmpty (Dual a)
 instance DecidablyEmpty (First a) where
   isEmpty (First a) = isNothing a
 instance DecidablyEmpty (Last a) where
   isEmpty (Last a) = isNothing a
-deriving instance DecidablyEmpty a => DecidablyEmpty (Identity a)
+deriving newtype instance DecidablyEmpty a => DecidablyEmpty (Identity a)
 #if !MIN_VERSION_base(4,16,0)
 instance Semigroup a => DecidablyEmpty (Option a) where
   isEmpty (Option a) = isNothing a
 #endif
-deriving instance DecidablyEmpty m => DecidablyEmpty (WrappedMonoid m)
+deriving newtype instance DecidablyEmpty m => DecidablyEmpty (WrappedMonoid m)
 instance (Ord a, Bounded a) => DecidablyEmpty (Max a)
 instance (Ord a, Bounded a) => DecidablyEmpty (Min a)
 instance DecidablyEmpty (Proxy s)
-deriving instance DecidablyEmpty a => DecidablyEmpty (Const a b)
+deriving newtype instance DecidablyEmpty a => DecidablyEmpty (Const a b)
 #if MIN_VERSION_base(4,11,0)
-deriving instance DecidablyEmpty a => DecidablyEmpty (Down a)
+deriving newtype instance DecidablyEmpty a => DecidablyEmpty (Down a)
 #endif
 #if MIN_VERSION_base(4,12,0)
-deriving instance DecidablyEmpty p => DecidablyEmpty (Par1 p)
+deriving newtype instance DecidablyEmpty p => DecidablyEmpty (Par1 p)
 instance DecidablyEmpty (U1 p)
-deriving instance DecidablyEmpty (f p) => DecidablyEmpty (Rec1 f p)
-deriving instance DecidablyEmpty (f p) => DecidablyEmpty (M1 i c f p)
-deriving instance DecidablyEmpty c => DecidablyEmpty (K1 i c p)
+deriving newtype instance DecidablyEmpty (f p) => DecidablyEmpty (Rec1 f p)
+deriving newtype instance DecidablyEmpty (f p) => DecidablyEmpty (M1 i c f p)
+deriving newtype instance DecidablyEmpty c => DecidablyEmpty (K1 i c p)
 instance (DecidablyEmpty (f p), DecidablyEmpty (g p)) => DecidablyEmpty ((f :*: g) p) where
   isEmpty (x :*: y) = isEmpty x && isEmpty y
-deriving instance DecidablyEmpty (f (g p)) => DecidablyEmpty ((f :.: g) p)
+deriving newtype instance DecidablyEmpty (f (g p)) => DecidablyEmpty ((f :.: g) p)
 #endif
 
 instance (DecidablyEmpty a, DecidablyEmpty b) => DecidablyEmpty (a, b) where

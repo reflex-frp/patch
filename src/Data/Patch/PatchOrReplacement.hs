@@ -1,11 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {-|
@@ -37,12 +30,12 @@ import GHC.Generics
 data PatchOrReplacement p
   = PatchOrReplacement_Patch p
   | PatchOrReplacement_Replacement (PatchTarget p)
-  deriving (Generic)
+  deriving stock (Generic)
 
-deriving instance (Eq p, Eq (PatchTarget p)) => Eq (PatchOrReplacement p)
-deriving instance (Ord p, Ord (PatchTarget p)) => Ord (PatchOrReplacement p)
-deriving instance (Show p, Show (PatchTarget p)) => Show (PatchOrReplacement p)
-deriving instance (Read p, Read (PatchTarget p)) => Read (PatchOrReplacement p)
+deriving stock instance (Eq p, Eq (PatchTarget p)) => Eq (PatchOrReplacement p)
+deriving stock instance (Ord p, Ord (PatchTarget p)) => Ord (PatchOrReplacement p)
+deriving stock instance (Show p, Show (PatchTarget p)) => Show (PatchOrReplacement p)
+deriving stock instance (Read p, Read (PatchTarget p)) => Read (PatchOrReplacement p)
 
 -- | Traverse a 'PatchOrReplacement' with a function for each case
 traversePatchOrReplacement

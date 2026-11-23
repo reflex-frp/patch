@@ -1,8 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
 
 {-|
 Description:
@@ -91,10 +87,10 @@ instance Group (Proxy x) where
   _ ~~ _ = Proxy
 
 -- | Const lifts groups into a functor.
-deriving instance Group a => Group (Const a x)
+deriving newtype instance Group a => Group (Const a x)
 
 -- | Identity lifts groups pointwise (at only one point)
-deriving instance Group a => Group (Identity a)
+deriving newtype instance Group a => Group (Identity a)
 
 -- | Functions lift groups pointwise.
 instance Group b => Group (a -> b) where
