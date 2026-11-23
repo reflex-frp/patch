@@ -13,9 +13,6 @@ import Data.Maybe
 import Data.Semigroup
   ( Sum (..)
   , Product (..)
-#if !MIN_VERSION_base(4,11,0)
-  , Semigroup(..)
-#endif
   )
 import Data.Proxy
 

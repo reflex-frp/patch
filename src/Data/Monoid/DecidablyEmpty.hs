@@ -10,14 +10,10 @@ import Data.Functor.Identity
 import Data.Functor.Const
 import Data.Monoid
 import Data.Maybe (isNothing)
-#if MIN_VERSION_base(4,11,0)
 import Data.Ord
-#endif
 import Data.Proxy
 import Data.Semigroup hiding (First, Last)
-#if MIN_VERSION_base(4,12,0)
 import GHC.Generics
-#endif
 
 import qualified Data.IntSet as IntSet
 import qualified Data.IntMap as IntMap
@@ -49,13 +45,7 @@ instance DecidablyEmpty All
 -- instance DecidablyEmpty Event
 instance DecidablyEmpty [a] where
   isEmpty = null
-instance
-#if MIN_VERSION_base(4,11,0)
-  Semigroup a
-#else
-  Monoid a
-#endif
-  => DecidablyEmpty (Maybe a) where
+instance Semigroup a => DecidablyEmpty (Maybe a) where
   isEmpty = isNothing
 instance (Num a, Eq a) => DecidablyEmpty (Product a) where
   isEmpty = (== 1)
@@ -76,10 +66,7 @@ instance (Ord a, Bounded a) => DecidablyEmpty (Max a)
 instance (Ord a, Bounded a) => DecidablyEmpty (Min a)
 instance DecidablyEmpty (Proxy s)
 deriving newtype instance DecidablyEmpty a => DecidablyEmpty (Const a b)
-#if MIN_VERSION_base(4,11,0)
 deriving newtype instance DecidablyEmpty a => DecidablyEmpty (Down a)
-#endif
-#if MIN_VERSION_base(4,12,0)
 deriving newtype instance DecidablyEmpty p => DecidablyEmpty (Par1 p)
 instance DecidablyEmpty (U1 p)
 deriving newtype instance DecidablyEmpty (f p) => DecidablyEmpty (Rec1 f p)
@@ -88,7 +75,6 @@ deriving newtype instance DecidablyEmpty c => DecidablyEmpty (K1 i c p)
 instance (DecidablyEmpty (f p), DecidablyEmpty (g p)) => DecidablyEmpty ((f :*: g) p) where
   isEmpty (x :*: y) = isEmpty x && isEmpty y
 deriving newtype instance DecidablyEmpty (f (g p)) => DecidablyEmpty ((f :.: g) p)
-#endif
 
 instance (DecidablyEmpty a, DecidablyEmpty b) => DecidablyEmpty (a, b) where
   isEmpty (a, b) = isEmpty a && isEmpty b

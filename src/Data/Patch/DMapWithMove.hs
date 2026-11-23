@@ -27,9 +27,6 @@ import Data.Kind (Type)
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.Monoid.DecidablyEmpty
-#if !MIN_VERSION_base(4,11,0)
-import Data.Semigroup (Semigroup (..))
-#endif
 import Data.Some (Some, mkSome)
 import Data.These
 

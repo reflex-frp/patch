@@ -13,9 +13,6 @@ module Data.Patch.PatchOrReplacement
 
 import Control.Lens.TH (makePrisms)
 import Data.Patch
-#if !MIN_VERSION_base(4,11,0)
-import Data.Semigroup (Semigroup (..))
-#endif
 import GHC.Generics
 
 -- | Either a patch or a replacement value.
@@ -56,9 +53,6 @@ instance Patch p => Patch (PatchOrReplacement p) where
     PatchOrReplacement_Replacement v -> \_ -> Just v
 
 instance ( Monoid p
-#if !MIN_VERSION_base(4,11,0)
-         , Semigroup p
-#endif
          , Patch p
          ) => Monoid (PatchOrReplacement p) where
   mempty = PatchOrReplacement_Patch mempty

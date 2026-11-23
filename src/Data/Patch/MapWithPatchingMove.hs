@@ -52,9 +52,6 @@ import Data.List
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
-#if !MIN_VERSION_base(4,11,0)
-import Data.Semigroup (Semigroup (..))
-#endif
 import Data.Monoid.DecidablyEmpty
 import Data.Set (Set)
 import qualified Data.Set as Set
@@ -74,9 +71,6 @@ deriving newtype instance (Eq k, Eq p, Eq (PatchTarget p)) => Eq (PatchMapWithPa
 deriving newtype instance (Ord k, Ord p, Ord (PatchTarget p)) => Ord (PatchMapWithPatchingMove k p)
 
 deriving newtype instance ( Ord k
-#if !MIN_VERSION_base(4,11,0)
-                          , Semigroup p
-#endif
                           , DecidablyEmpty p
                           , Patch p
                           ) => DecidablyEmpty (PatchMapWithPatchingMove k p)
@@ -112,9 +106,6 @@ insertMapKey k v = PatchMapWithPatchingMove . Map.singleton k $ NodeInfo (From_I
 -- @
 moveMapKey
   :: ( DecidablyEmpty p
-#if !MIN_VERSION_base(4,11,0)
-     , Semigroup p
-#endif
      , Patch p
      )
   => Ord k => k -> k -> PatchMapWithPatchingMove k p
@@ -128,9 +119,6 @@ moveMapKey src dst
 
 patchMapKey
   :: ( DecidablyEmpty p
-#if !MIN_VERSION_base(4,11,0)
-     , Semigroup p
-#endif
      )
   => k -> p -> PatchMapWithPatchingMove k p
 patchMapKey k p
@@ -149,9 +137,6 @@ patchMapKey k p
 -- @
 swapMapKey
   :: ( DecidablyEmpty p
-#if !MIN_VERSION_base(4,11,0)
-     , Semigroup p
-#endif
      , Patch p
      )
   => Ord k => k -> k -> PatchMapWithPatchingMove k p
@@ -367,9 +352,6 @@ data Fixup k v
 -- | Compose patches having the same effect as applying the patches in turn:
 -- @'applyAlways' (p <> q) == 'applyAlways' p . 'applyAlways' q@
 instance ( Ord k
-#if !MIN_VERSION_base(4,11,0)
-         , Semigroup p
-#endif
          , DecidablyEmpty p
          , Patch p
          ) => Semigroup (PatchMapWithPatchingMove k p) where
@@ -460,9 +442,6 @@ instance ( Ord k
 -- | Compose patches having the same effect as applying the patches in turn:
 -- @'applyAlways' (p <> q) == 'applyAlways' p . 'applyAlways' q@
 instance ( Ord k
-#if !MIN_VERSION_base(4,11,0)
-         , Semigroup p
-#endif
          , DecidablyEmpty p
          , Patch p
          ) => Monoid (PatchMapWithPatchingMove k p) where
