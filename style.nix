@@ -44,7 +44,6 @@ let style = inputs."style.hs";
     syncConfigs = dir: ''
       ${syncConfig fourmoluConfig "${dir}/fourmolu.yaml"}
       ${syncConfig "${style}/hlint.yaml" "${dir}/.hlint.yaml"}
-      ${syncConfig "${style}/STYLE.md" "${dir}/STYLE.md"}
     '';
 in {
   inherit fourmolu hlint fourmolu-check hlint-check syncConfigs;
