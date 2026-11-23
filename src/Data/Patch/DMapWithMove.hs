@@ -11,14 +11,14 @@ module Data.Patch.DMapWithMove where
 
 import Data.Constraint.Extras
 import Data.Dependent.Map (DMap)
-import qualified Data.Dependent.Map as DMap
+import Data.Dependent.Map qualified as DMap
 import Data.Dependent.Sum (DSum (..))
 import Data.Functor.Constant
 import Data.Functor.Product
 import Data.GADT.Compare (GCompare (..), GEq (..))
 import Data.GADT.Show (GShow, gshow)
 import Data.Kind (Type)
-import qualified Data.Map as Map
+import Data.Map qualified as Map
 import Data.Maybe
 import Data.Some (Some, mkSome)
 import Data.These
@@ -27,7 +27,7 @@ import Data.Functor.Misc
 import Data.Monoid.DecidablyEmpty
 import Data.Patch.Class
 import Data.Patch.MapWithMove (PatchMapWithMove (..))
-import qualified Data.Patch.MapWithMove as MapWithMove
+import Data.Patch.MapWithMove qualified as MapWithMove
 
 -- | Like 'PatchMapWithMove', but for 'DMap'. Each key carries a 'NodeInfo' which describes how it will be changed by the patch and connects move sources and
 -- destinations.
@@ -140,7 +140,7 @@ instance GCompare k => Semigroup (PatchDMapWithMove k v) where
         , This x <- b =
             Fixup_Update $ These x y
       mergeFixups _ _ _ = error "PatchDMapWithMove: incompatible fixups"
-      fixups = DMap.fromListWithKey mergeFixups $ concatMap h connections
+      fixups = DMap.fromListWithKey mergeFixups $ foldMap h connections
       combineNodeInfos _ nia nib =
         NodeInfo
           { _nodeInfo_from = _nodeInfo_from nia

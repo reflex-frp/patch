@@ -16,7 +16,7 @@ import Test.HUnit (assertEqual, errors, failures, runTestTT, test, (~:))
 import Data.Patch (Patch (apply))
 import Data.Patch.MapWithMove (patchThatChangesMap)
 import Data.Patch.MapWithPatchingMove (PatchMapWithPatchingMove)
-import qualified Data.Patch.MapWithPatchingMove as PatchMapWithPatchingMove
+import Data.Patch.MapWithPatchingMove qualified as PatchMapWithPatchingMove
 
 main :: IO ()
 main = do
@@ -41,7 +41,7 @@ main = do
   if errors counts + failures counts == 0 then exitSuccess else exitFailure
 
 propertyChecks :: IO Bool
-propertyChecks = checkParallel $$(discover)
+propertyChecks = checkParallel $$discover
 
 prop_patchThatChangesMap :: Property
 prop_patchThatChangesMap = property $ do

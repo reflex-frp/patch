@@ -6,20 +6,20 @@
 -- Description: This module provides a class to decide whether a monoid element is the identity.
 module Data.Monoid.DecidablyEmpty where
 
-import qualified Data.Dependent.Map as DMap
+import Data.Dependent.Map qualified as DMap
 import Data.Functor.Const
 import Data.Functor.Identity
 import Data.GADT.Compare
-import qualified Data.IntMap as IntMap
-import qualified Data.IntSet as IntSet
-import qualified Data.Map as Map
+import Data.IntMap qualified as IntMap
+import Data.IntSet qualified as IntSet
+import Data.Map qualified as Map
 import Data.Maybe (isNothing)
 import Data.Monoid
 import Data.Ord
 import Data.Proxy
 import Data.Semigroup hiding (First, Last)
-import qualified Data.Sequence as Seq
-import qualified Data.Set as Set
+import Data.Sequence qualified as Seq
+import Data.Set qualified as Set
 import GHC.Generics
 
 -- | A 'DecidablyEmpty' is one where it can be computed whether or not an

@@ -46,10 +46,10 @@ import Data.Foldable (toList)
 import Data.Function
 import Data.List
 import Data.Map (Map)
-import qualified Data.Map as Map
+import Data.Map qualified as Map
 import Data.Maybe
 import Data.Set (Set)
-import qualified Data.Set as Set
+import Data.Set qualified as Set
 import Data.These (These (..))
 
 import Data.Monoid.DecidablyEmpty
@@ -187,7 +187,7 @@ instance (Ord k, Patch p) => Patch (PatchMapWithPatchingMove k p) where
 -- | Returns all the new elements that will be added to the 'Map'
 patchMapWithPatchingMoveNewElements
   :: PatchMapWithPatchingMove k p -> [PatchTarget p]
-patchMapWithPatchingMoveNewElements = Map.elems . patchMapWithPatchingMoveNewElementsMap
+patchMapWithPatchingMoveNewElements = toList . patchMapWithPatchingMoveNewElementsMap
 
 -- | Return a @'Map' k v@ with all the inserts/updates from the given @'PatchMapWithPatchingMove' k v@.
 patchMapWithPatchingMoveNewElementsMap
@@ -392,7 +392,7 @@ instance
   where
   PatchMapWithPatchingMove mNew <> PatchMapWithPatchingMove mOld = PatchMapWithPatchingMove m
     where
-      connections = Map.elems $ Map.intersectionWithKey (\_ new old -> (_nodeInfo_to new, _nodeInfo_from old)) mNew mOld
+      connections = toList $ Map.intersectionWithKey (\_ new old -> (_nodeInfo_to new, _nodeInfo_from old)) mNew mOld
       h :: (Maybe k, From k p) -> [(k, Fixup k p)]
       h = \case
         (Just toAfter, From_Move fromBefore p)
@@ -415,7 +415,7 @@ instance
         , This x <- b =
             Fixup_Update $ These x y
       mergeFixups _ _ = error "PatchMapWithPatchingMove: incompatible fixups"
-      fixups = Map.fromListWithKey (\_ -> mergeFixups) $ concatMap h connections
+      fixups = Map.fromListWithKey (const mergeFixups) $ foldMap h connections
       combineNodeInfos niNew niOld =
         NodeInfo
           { _nodeInfo_from = _nodeInfo_from niNew
@@ -466,7 +466,7 @@ instance
                     -- sends the value at key oldToAfter.  We send our value there.
                     Just mNewToAfter -> mNewToAfter
               }
-      m = Map.differenceWithKey (\_ -> applyFixup) (Map.unionWith combineNodeInfos mNew mOld) fixups
+      m = Map.differenceWithKey (const applyFixup) (Map.unionWith combineNodeInfos mNew mOld) fixups
       getHere :: These a b -> Maybe a
       getHere = \case
         This a -> Just a

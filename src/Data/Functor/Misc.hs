@@ -32,16 +32,16 @@ module Data.Functor.Misc
   ) where
 
 import Data.Dependent.Map (DMap)
-import qualified Data.Dependent.Map as DMap
+import Data.Dependent.Map qualified as DMap
 import Data.Dependent.Sum
 import Data.Functor.Identity
 import Data.GADT.Compare
 import Data.GADT.Show
 import Data.IntMap (IntMap)
-import qualified Data.IntMap as IntMap
+import Data.IntMap qualified as IntMap
 import Data.Kind (Type)
 import Data.Map (Map)
-import qualified Data.Map as Map
+import Data.Map qualified as Map
 import Data.Some (Some, mkSome)
 import Data.These
 import Data.Type.Equality ((:~:) (Refl))
@@ -82,35 +82,35 @@ instance Ord k => GCompare (Const2 k v) where
 
 -- | Convert a 'DMap' to a regular 'Map'
 dmapToMap :: DMap (Const2 k v) Identity -> Map k v
-dmapToMap = Map.fromDistinctAscList . map (\(Const2 k :=> Identity v) -> (k, v)) . DMap.toAscList
+dmapToMap = Map.fromDistinctAscList . fmap (\(Const2 k :=> Identity v) -> (k, v)) . DMap.toAscList
 
 -- | Convert a 'DMap' to an 'IntMap'
 dmapToIntMap :: DMap (Const2 IntMap.Key v) Identity -> IntMap v
-dmapToIntMap = IntMap.fromDistinctAscList . map (\(Const2 k :=> Identity v) -> (k, v)) . DMap.toAscList
+dmapToIntMap = IntMap.fromDistinctAscList . fmap (\(Const2 k :=> Identity v) -> (k, v)) . DMap.toAscList
 
 -- | Convert a 'DMap' to a regular 'Map', applying the given function to remove
 -- the wrapping 'Functor'
 dmapToMapWith :: (f v -> v') -> DMap (Const2 k v) f -> Map k v'
-dmapToMapWith f = Map.fromDistinctAscList . map (\(Const2 k :=> v) -> (k, f v)) . DMap.toAscList
+dmapToMapWith f = Map.fromDistinctAscList . fmap (\(Const2 k :=> v) -> (k, f v)) . DMap.toAscList
 
 -- | Convert a regular 'Map' to a 'DMap'
 mapToDMap :: Map k v -> DMap (Const2 k v) Identity
-mapToDMap = DMap.fromDistinctAscList . map (\(k, v) -> Const2 k :=> Identity v) . Map.toAscList
+mapToDMap = DMap.fromDistinctAscList . fmap (\(k, v) -> Const2 k :=> Identity v) . Map.toAscList
 
 -- | Convert a regular 'Map', where the values are already wrapped in a functor,
 -- to a 'DMap'
 mapWithFunctorToDMap :: Map k (f v) -> DMap (Const2 k v) f
-mapWithFunctorToDMap = DMap.fromDistinctAscList . map (\(k, v) -> Const2 k :=> v) . Map.toAscList
+mapWithFunctorToDMap = DMap.fromDistinctAscList . fmap (\(k, v) -> Const2 k :=> v) . Map.toAscList
 
 -- | Convert a regular 'IntMap', where the values are already wrapped in a
 -- functor, to a 'DMap'
 intMapWithFunctorToDMap :: IntMap (f v) -> DMap (Const2 IntMap.Key v) f
-intMapWithFunctorToDMap = DMap.fromDistinctAscList . map (\(k, v) -> Const2 k :=> v) . IntMap.toAscList
+intMapWithFunctorToDMap = DMap.fromDistinctAscList . fmap (\(k, v) -> Const2 k :=> v) . IntMap.toAscList
 
 -- | Convert a 'DMap' to a regular 'Map' by forgetting the types associated with
 -- the keys, using a function to remove the wrapping 'Functor'
 weakenDMapWith :: (forall a. v a -> v') -> DMap k v -> Map (Some k) v'
-weakenDMapWith f = Map.fromDistinctAscList . map (\(k :=> v) -> (mkSome k, f v)) . DMap.toAscList
+weakenDMapWith f = Map.fromDistinctAscList . fmap (\(k :=> v) -> (mkSome k, f v)) . DMap.toAscList
 
 --------------------------------------------------------------------------------
 -- WrapArg
@@ -144,7 +144,7 @@ instance GCompare f => GCompare (WrapArg g f) where
 -- well as the value.  The provided function MUST preserve the ordering of the
 -- keys, or the resulting 'DMap' will be malformed.
 mapKeyValuePairsMonotonic :: (DSum k v -> DSum k' v') -> DMap k v -> DMap k' v'
-mapKeyValuePairsMonotonic f = DMap.fromDistinctAscList . map f . DMap.toAscList
+mapKeyValuePairsMonotonic f = DMap.fromDistinctAscList . fmap f . DMap.toAscList
 
 {-# INLINE combineDMapsWithKey #-}
 
@@ -160,8 +160,8 @@ combineDMapsWithKey
 combineDMapsWithKey f mg mh = DMap.fromList $ go (DMap.toList mg) (DMap.toList mh)
   where
     go :: [DSum f g] -> [DSum f h] -> [DSum f i]
-    go [] hs = map (\(hk :=> hv) -> hk :=> f hk (That hv)) hs
-    go gs [] = map (\(gk :=> gv) -> gk :=> f gk (This gv)) gs
+    go [] hs = fmap (\(hk :=> hv) -> hk :=> f hk (That hv)) hs
+    go gs [] = fmap (\(gk :=> gv) -> gk :=> f gk (This gv)) gs
     go gs@((gk :=> gv) : gs') hs@((hk :=> hv) : hs') = case gk `gcompare` hk of
       GLT -> (gk :=> f gk (This gv)) : go gs' hs
       GEQ -> (gk :=> f gk (These gv hv)) : go gs' hs'
@@ -205,8 +205,8 @@ instance GShow (EitherTag l r) where
 -- | Convert 'Either' to a 'DSum'. Inverse of 'dsumToEither'.
 eitherToDSum :: Either a b -> DSum (EitherTag a b) Identity
 eitherToDSum = \case
-  Left a -> (LeftTag :=> Identity a)
-  Right b -> (RightTag :=> Identity b)
+  Left a -> LeftTag :=> Identity a
+  Right b -> RightTag :=> Identity b
 
 -- | Convert 'DSum' to 'Either'. Inverse of 'eitherToDSum'.
 dsumToEither :: DSum (EitherTag a b) Identity -> Either a b

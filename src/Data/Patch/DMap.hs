@@ -8,12 +8,12 @@
 module Data.Patch.DMap where
 
 import Data.Dependent.Map (DMap)
-import qualified Data.Dependent.Map as DMap
+import Data.Dependent.Map qualified as DMap
 import Data.Dependent.Sum (DSum (..))
 import Data.Functor.Constant
 import Data.GADT.Compare (GCompare (..))
-import qualified Data.IntMap as IntMap
-import qualified Data.Map as Map
+import Data.IntMap qualified as IntMap
+import Data.Map qualified as Map
 import Data.Some (Some)
 
 import Data.Functor.Misc
@@ -40,7 +40,7 @@ instance GCompare k => Patch (PatchDMap k v) where
   type PatchTarget (PatchDMap k v) = DMap k v
   apply (PatchDMap diff) old = Just $! insertions `DMap.union` (old `DMap.difference` deletions) -- TODO: return Nothing sometimes --Note: the strict application here is critical to ensuring that incremental merges don't hold onto all their prerequisite events forever; can we make this more robust?
     where
-      insertions = DMap.mapMaybeWithKey (const $ getComposeMaybe) diff
+      insertions = DMap.mapMaybeWithKey (const getComposeMaybe) diff
       deletions = DMap.mapMaybeWithKey (const $ nothingToJust . getComposeMaybe) diff
       nothingToJust = \case
         Nothing -> Just $ Constant ()
