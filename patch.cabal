@@ -61,7 +61,7 @@ library
         base >=4.9 && <=4.23,
         constraints-extras >=0.3 && <0.5,
         commutative-semigroups >=0.0 && <0.3,
-        containers >=0.6 && <0.8,
+        containers >=0.6 && <0.9,
         dependent-map >=0.3 && <0.5,
         dependent-sum >=0.6 && <0.8,
         lens >=4.7 && <5.4,
@@ -118,7 +118,7 @@ test-suite hlint
         build-depends: hlint (<2.1 || >=2.2.2) && <3.5
 
     else
-        build-depends: hlint >=3.5 && <3.6
+        build-depends: hlint >=3.5 && <3.11
 
     if ((impl(ghcjs >=0) || arch(javascript)) || !flag(hlint))
         buildable: False
