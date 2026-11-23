@@ -1,11 +1,14 @@
 # Revision history for patch
 
-## 0.0.8.5
+## 0.0.9.0
 
 * Strict `apply` for `PatchIntMap`, bringing it in line with the other `Map` types.
 * Support for GHC 9.14.
 * Allow `these` 1.3 and `semialign` 1.4.
+* Allow `containers` 0.8.
 * Drop support for GHC older than 8.10.
+* Drop the unused `semigroupoids` and `witherable` dependencies.
+* Allow `hlint` up to 3.10 in the hlint test suite.
 
 ## 0.0.8.4
 
