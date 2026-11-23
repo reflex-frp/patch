@@ -3,6 +3,7 @@
 ## 0.0.8.5
 
 * Strict `apply` for `PatchIntMap`, bringing it in line with the other `Map` types.
+* Support for GHC 9.14.
 
 ## 0.0.8.4
 
