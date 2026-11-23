@@ -1,9 +1,24 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ system ? builtins.currentSystem
+, inputs ? import ./inputs.nix { inherit system; }
+, pkgs ? inputs.pkgs
+}:
 
-let reflex-platform-shell = import ./nix/shell/reflex-platform.nix;
-    haskell-nix-shell = import ./nix/shell/haskell.nix {};
+let project = import ./default.nix { inherit system inputs; };
+    style = import ./style.nix { inherit system inputs pkgs; };
+
+    withStyle = shell: pkgs.mkShell {
+      inputsFrom = [ shell ];
+      packages = [
+        style.fourmolu
+        style.hlint
+      ];
+      shellHook = style.syncConfigs "$PWD";
+    };
 
 in {
-  inherit reflex-platform-shell;
-  inherit haskell-nix-shell;
+  haskell-nix = withStyle project.haskell-nix.shell;
+  nixpkgs = withStyle project.nixpkgs.shell;
+
+  haskell-nix-wasm-meta = withStyle project.haskell-nix-wasm-meta.shell;
+  nixpkgs-wasm-meta = withStyle project.nixpkgs-wasm-meta.shell;
 }

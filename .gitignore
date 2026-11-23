@@ -1,4 +1,6 @@
 dist
+result
+result-*
 cabal.sandbox.config
 cabal.project.local
 .cabal-sandbox/
