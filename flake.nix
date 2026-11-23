@@ -29,8 +29,8 @@
     in {
       legacyPackages = eachSystem (system:
         projectFor system // {
-          # Every driver, compiler and cross target patch is meant to work
-          # for, built both ways.
+          # Every driver and compiler patch is meant to work for, built
+          # both ways.
           release = import ./release.nix {
             inherit system;
             inputs = inputsFor system;
@@ -42,13 +42,8 @@
         let project = projectFor system;
         in rec {
           default = haskell-nix;
-          haskell-nix = project.haskell-nix.projectCross.wasi32.hsPkgs.patch.components.library;
-          nixpkgs = project.nixpkgs.projectCross.ghcjs.packages.patch;
-
-          # Builds the wasm target with the GHC 9.12 bindist from the
-          # ghc-wasm-meta pin instead of the drivers' own compilers.
-          haskell-nix-wasm-meta = project.haskell-nix-wasm-meta.projectCross.wasi32.hsPkgs.patch.components.library;
-          nixpkgs-wasm-meta = project.nixpkgs-wasm-meta.projectCross.wasi32.packages.patch;
+          haskell-nix = project.haskell-nix.hsPkgs.patch.components.library;
+          nixpkgs = project.nixpkgs.packages.patch;
         });
 
       devShells = eachSystem (system:

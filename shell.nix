@@ -18,7 +18,4 @@ let project = import ./default.nix { inherit system inputs; };
 in {
   haskell-nix = withStyle project.haskell-nix.shell;
   nixpkgs = withStyle project.nixpkgs.shell;
-
-  haskell-nix-wasm-meta = withStyle project.haskell-nix-wasm-meta.shell;
-  nixpkgs-wasm-meta = withStyle project.nixpkgs-wasm-meta.shell;
 }
