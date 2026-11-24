@@ -1,0 +1,15 @@
+name: cabal-check
+
+on:
+  pull_request:
+  push:
+    branches: [ develop, master ]
+
+jobs:
+  cabal-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # The runner image ships cabal through ghcup.
+      - name: Check the package for Hackage
+        run: cabal check
